@@ -1,6 +1,7 @@
 "use client";
+
 import { useState } from "react";
-import Image from 'next/image';
+import Image from "next/image";
 import styles from "../auth.module.css";
 
 export default function Register() {
@@ -17,12 +18,27 @@ export default function Register() {
 
   return (
     <main className={styles.mainAuth}>
+      <div className={styles.authContContext}>
+        <div className={styles.authContCard}>
+          <div className={styles.authContTitle}>
+            <Image src="/logo.png" alt="Logo" width={100} height={100} />
+            <p>Opo Time</p>
+          </div>
+          <div className={styles.authContDescrip}>
+            <p>Join us today and start tracking your productivity.</p>
+          </div>
+        </div>
+      </div>
+
       <div className={styles.authContFormCont}>
         <div className={styles.loginCard}>
           <h2 className={styles.loginTitle}>Create your Account</h2>
+
           <form>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel} htmlFor="email">Email Address</label>
+              <label htmlFor="email" className={styles.formLabel}>
+                Email Address
+              </label>
               <input
                 type="email"
                 id="email"
@@ -30,8 +46,11 @@ export default function Register() {
                 required
               />
             </div>
+
             <div className={styles.formGroup}>
-              <label className={styles.formLabel} htmlFor="username">Username</label>
+              <label htmlFor="username" className={styles.formLabel}>
+                Username
+              </label>
               <input
                 type="text"
                 id="username"
@@ -39,8 +58,11 @@ export default function Register() {
                 required
               />
             </div>
+
             <div className={styles.formGroup}>
-              <label className={styles.formLabel} htmlFor="password">Password</label>
+              <label htmlFor="password" className={styles.formLabel}>
+                Password
+              </label>
               <div className={styles.passwordContainer}>
                 <input
                   type={showPassword ? "text" : "password"}
@@ -58,8 +80,11 @@ export default function Register() {
                 </button>
               </div>
             </div>
+
             <div className={styles.formGroup}>
-              <label className={styles.formLabel} htmlFor="confirmPassword">Confirm Password</label>
+              <label htmlFor="confirmPassword" className={styles.formLabel}>
+                Confirm Password
+              </label>
               <div className={styles.passwordContainer}>
                 <input
                   type={showConfirmPassword ? "text" : "password"}
@@ -77,27 +102,15 @@ export default function Register() {
                 </button>
               </div>
             </div>
-            <button type="submit" className={styles.loginButton}>Create Account</button>
+
+            <button type="submit" className={styles.loginButton}>
+              Create Account
+            </button>
+
             <div className={styles.registerLink}>
               Already have an account? <a href="../login">Login</a>
             </div>
           </form>
-        </div>
-      </div>
-      <div className={styles.authContContext}>
-        <div className={styles.authContCard}>
-          <div className={styles.authContTitle}>
-            <Image
-              src="/logo.png"
-              alt="Logo"
-              width={100}
-              height={100}
-            />
-            <p>Opo Time</p>
-          </div>
-          <div className={styles.authContDescrip}>
-            <p>Join us today and start tracking your productivity.</p>
-          </div>
         </div>
       </div>
     </main>
