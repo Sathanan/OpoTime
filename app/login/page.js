@@ -43,7 +43,6 @@ export default function Login() {
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Username / E-Mail</label>
               <input
-                type="email"
                 id="email"
                 className={styles.formInput}
                 required

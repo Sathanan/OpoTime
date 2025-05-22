@@ -290,7 +290,6 @@
     .authContContext {
         order: 1;
         padding: 2rem 1rem;
-        min-height: auto;
     }
     
     .authContFormCont {
@@ -301,7 +300,6 @@
     
     .authContCard {
         padding: 1.5rem;
-        min-height: auto;
         max-width: 100%;
     }
     
@@ -452,7 +450,6 @@
     
     .authContCard {
         padding: 1rem;
-        min-height: auto;
     }
     
     .authContTitle {
