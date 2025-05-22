@@ -1,6 +1,7 @@
 "use client"; 
 
 import { useState } from "react";
+import Image from 'next/image';
 import styles from "../auth.module.css";
 
 export default function Login() {
@@ -15,8 +16,8 @@ export default function Login() {
       <div className={styles.authContContext}>
         <div className={styles.authContCard}>
           <div className={styles.authContTitle}>
-            <img
-              src="./logo.png"
+            <Image
+              src="/logo.png"
               alt="Logo"
               width={100}
               height={100}
