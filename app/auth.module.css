@@ -1,0 +1,487 @@
+.mainAuth {
+    background: linear-gradient(160deg,rgba(162, 45, 131, 1) 0%, rgba(133, 200, 229, 1) 100%);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: 1fr;
+    grid-column-gap: 0px;
+    grid-row-gap: 0px;
+}
+
+.authContContext {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: slideInFromRight 0.8s ease-out;
+    padding: 1rem;
+}
+
+.authContFormCont {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.486);
+    animation: slideInFromLeft 0.8s ease-out;
+    padding: 1rem;
+}
+
+/* Animations für die Container */
+@keyframes slideInFromLeft {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInFromRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.loginCard {
+    background: white;
+    padding: 3rem;
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 550px;
+    animation: fadeInUp 1s ease-out 0.3s both;
+}
+
+.authContCard {
+    padding: 3rem;
+    width: 100%;
+    max-width: 700px;
+    height: auto;
+    min-height: 30rem;
+    display: flex;
+    flex-direction: column;
+    animation: fadeInUp 1s ease-out 0.3s both;
+}
+
+@keyframes fadeInUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.loginTitle {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    color: #1f2937;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.formGroup {
+    margin-bottom: 1.5rem;
+}
+
+.formLabel {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #374151;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.formInput {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+    background: #f9fafb;
+    box-sizing: border-box;
+}
+
+.formInput:focus {
+    outline: none;
+    border-color: #a855f7;
+    background: white;
+}
+
+.passwordContainer {
+    position: relative;
+}
+
+.passwordToggle {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    font-size: 1.1rem;
+    transition: color 0.2s ease;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.passwordToggle:hover {
+    color: #a855f7;
+}
+
+.checkboxContainer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.checkboxGroup {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox {
+    width: 18px;
+    height: 18px;
+    margin-right: 0.5rem;
+    accent-color: #a855f7;
+    flex-shrink: 0;
+}
+
+.checkboxLabel {
+    color: #374151;
+    font-size: 0.9rem;
+}
+
+.forgotPassword {
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+}
+
+.forgotPassword:hover {
+    color: #a855f7;
+}
+
+.loginButton {
+    width: 100%;
+    padding: 0.875rem;
+    background: linear-gradient(135deg, #a855f7, #06b6d4);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 1.5rem;
+}
+
+.loginButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(168, 85, 247, 0.3);
+}
+
+.registerLink {
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.registerLink a {
+    color: #a855f7;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.registerLink a:hover {
+    text-decoration: underline;
+    color: #7c3aed;
+}
+
+.authContTitle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 5rem;
+    color: white;
+    font-weight: 600;
+    margin-bottom: 5rem;
+    text-align: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.authContTitle img {
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.authContDescrip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* Tablet Styles */
+@media (max-width: 1024px) {
+    .authContTitle {
+        font-size: 4rem;
+        margin-bottom: 3rem;
+    }
+    
+    .authContDescrip {
+        font-size: 1.5rem;
+    }
+    
+    .loginCard {
+        padding: 2.5rem;
+    }
+    
+    .authContCard {
+        padding: 2rem;
+        min-height: 25rem;
+    }
+}
+
+/* Small Tablet / Large Mobile */
+@media (max-width: 768px) {
+    .mainAuth {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+        min-height: 100vh;
+        height: auto;
+    }
+    
+    .authContContext {
+        order: 1;
+        padding: 2rem 1rem;
+        min-height: auto;
+    }
+    
+    .authContFormCont {
+        order: 2;
+        padding: 2rem 1rem;
+        background-color: white;
+    }
+    
+    .authContCard {
+        padding: 1.5rem;
+        min-height: auto;
+        max-width: 100%;
+    }
+    
+    .authContTitle {
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .authContTitle img {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .authContDescrip {
+        font-size: 1.2rem;
+    }
+    
+    .loginCard {
+        padding: 2rem;
+        max-width: 100%;
+        border-radius: 16px;
+        box-shadow: none;
+    }
+    
+    .loginTitle {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .checkboxContainer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .checkboxGroup {
+        width: 100%;
+    }
+    
+    .forgotPassword {
+        align-self: flex-end;
+    }
+}
+
+/* Mobile Styles */
+@media (max-width: 480px) {
+    .mainAuth {
+        min-height: 100vh;
+        height: auto;
+    }
+    
+    .authContContext,
+    .authContFormCont {
+        padding: 1rem;
+    }
+    
+    .loginCard {
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+    
+    .authContCard {
+        padding: 1rem;
+    }
+    
+    .authContTitle {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .authContTitle img {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .authContDescrip {
+        font-size: 1rem;
+    }
+    
+    .loginTitle {
+        font-size: 1.3rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .formGroup {
+        margin-bottom: 1.25rem;
+    }
+    
+    .formInput {
+        padding: 0.75rem;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    .formLabel {
+        font-size: 0.9rem;
+    }
+    
+    .loginButton {
+        padding: 0.75rem;
+        font-size: 0.95rem;
+    }
+    
+    .checkboxLabel,
+    .forgotPassword,
+    .registerLink {
+        font-size: 0.85rem;
+    }
+    
+    .passwordToggle {
+        font-size: 1rem;
+        right: 0.75rem;
+    }
+}
+
+/* Extra Small Mobile */
+@media (max-width: 360px) {
+    .authContTitle {
+        font-size: 1.75rem;
+    }
+    
+    .authContDescrip {
+        font-size: 0.9rem;
+    }
+    
+    .loginCard {
+        padding: 1.25rem;
+    }
+    
+    .loginTitle {
+        font-size: 1.2rem;
+    }
+}
+
+/* Landscape Mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .mainAuth {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: 1fr;
+        height: 100vh;
+    }
+    
+    .authContContext,
+    .authContFormCont {
+        padding: 1rem;
+    }
+    
+    .authContCard {
+        padding: 1rem;
+        min-height: auto;
+    }
+    
+    .authContTitle {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+    
+    .authContTitle img {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .authContDescrip {
+        font-size: 0.9rem;
+    }
+    
+    .loginCard {
+        padding: 1.5rem;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .loginTitle {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .formGroup {
+        margin-bottom: 1rem;
+    }
+}
