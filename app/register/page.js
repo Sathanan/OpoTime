@@ -4,10 +4,26 @@ import { useState } from "react";
 import Image from "next/image";
 import styles from "../auth.module.css";
 import { register } from "../api/auth";
+import { redirect } from "next/navigation";
+
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  async function handleRegister(name, email, password, confirmPassword) {
+  if (password !== confirmPassword) {
+    alert("Die Passwörter stimmen nicht überein");
+    return;
+  }
+  console.log('before redirect');
+  const success = await register(name, email, password);
+  if (success) {
+    console.log('in redirect');
+    redirect('/dashboard');
+  }
+}
+
 
   const togglePassword = () => {
     setShowPassword((prev) => !prev);

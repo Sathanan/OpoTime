@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from 'next/image';
 import styles from "../auth.module.css";
 import { login } from "../api/auth";
+import { redirect } from 'next/navigation';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,7 +13,10 @@ export default function Login() {
     setShowPassword((prev) => !prev);
   };
   async function handleLogin(email, password) {
-    await login(email, password);
+    const success = await login(email, password);
+     if (success) {
+    redirect('/dashboard');
+  }
   }
 
   return (

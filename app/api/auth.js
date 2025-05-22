@@ -18,12 +18,13 @@ export async function login(name, password) {
 
         Cookies.set('accessToken', accessToken);
         Cookies.set('refreshToken', refreshToken);
-
         console.log("Login erfolgreich");
+        return true;
     } else {
         const errorData = await response.json();
         console.error("Login fehlgeschlagen:", errorData);
         alert("Login fehlgeschlagen: " + (errorData.error || "Unbekannter Fehler"));
+        return false;
     }
 }
 
