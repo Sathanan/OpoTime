@@ -22,33 +22,38 @@ export async function login(name, password) {
     } else {
         const errorData = await response.json();
         console.error("Login fehlgeschlagen:", errorData);
-        alert("Login fehlgeschlagen: " + (errorData.detail || "Unbekannter Fehler"));
+        alert("Login fehlgeschlagen: " + (errorData.error || "Unbekannter Fehler"));
     }
 }
 
 
 export async function register(username, email, password) {
-    console.log("register mit: "+ username + email + password)
-     const response = await fetch(baseURL + "/register/", {
+    console.log("register mit: " + username + email + password)
+    const response = await fetch(baseURL + "/register/", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ username, email, password })
+        body: JSON.stringify({
+            username: username,
+            email: email,
+            password: password,
+        }),
     });
 
     if (response.ok) {
         const data = await response.json();
-        console.log("Registrierung erfolgreich:", data);
 
         const accessToken = data["access"];
         const refreshToken = data["refresh"];
 
         document.cookie = `accessToken=${accessToken}; path=/; Secure; SameSite=Lax`;
         document.cookie = `refreshToken=${refreshToken}; path=/; Secure; SameSite=Lax`;
+
+        console.log("Register erfolgreich");
     } else {
         const errorData = await response.json();
-        console.error("Login fehlgeschlagen:", errorData);
-        alert("Login fehlgeschlagen: " + (errorData.detail || "Unbekannter Fehler"));
+        console.error("Register fehlgeschlagen:", errorData);
+        alert("Register fehlgeschlagen: " + (errorData.error || "Unbekannter Fehler"));
     }
 }

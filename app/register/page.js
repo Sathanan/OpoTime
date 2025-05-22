@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import styles from "../auth.module.css";
+import { register } from "../api/auth";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +17,14 @@ export default function Register() {
     setShowConfirmPassword((prev) => !prev);
   };
 
+  async function handleRegister(name, email, password, confirmPassword) {
+    if (password == confirmPassword) {
+      await register(name, email, password);
+    }
+    else {
+      alert("Die Passwörter stimmen nicht überein")
+    }
+  }
   return (
     <main className={styles.mainAuth}>
       <div className={styles.authContContext}>
@@ -103,10 +112,19 @@ export default function Register() {
               </div>
             </div>
 
-            <button type="submit" className={styles.loginButton}>
+            <button
+              className={styles.loginButton}
+              onClick={(e) => {
+                e.preventDefault();
+                const name = document.getElementById("username").value;
+                const email = document.getElementById("email").value;
+                const password = document.getElementById("password").value;
+                const confirmPassword = document.getElementById("confirmPassword").value;
+                handleRegister(name, email, password, confirmPassword);
+              }}
+            >
               Create Account
             </button>
-
             <div className={styles.registerLink}>
               Already have an account? <a href="../login">Login</a>
             </div>

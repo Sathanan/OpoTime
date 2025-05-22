@@ -11,9 +11,7 @@ export default function Login() {
   const togglePassword = () => {
     setShowPassword((prev) => !prev);
   };
-  async function handleLogin() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+  async function handleLogin(email, password) {
     await login(email, password);
   }
 
@@ -78,10 +76,12 @@ export default function Login() {
             </div>
 
             <button
-              type="submit"
               className={styles.loginButton}
-              onClick={() => {
-                handleLogin();
+              onClick={(e) => {
+                 e.preventDefault();
+                const email = document.getElementById("email").value;
+                const password = document.getElementById("password").value;
+                handleLogin(email, password);
               }}
             >
               Login
