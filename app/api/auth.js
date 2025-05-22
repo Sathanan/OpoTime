@@ -1,7 +1,8 @@
-const baseURL = "https://opotimeapi.onrender.com/api";
+import { BASE_URL } from "./utilis/config";
+import Cookies from 'js-cookie';
 
 export async function login(name, password) {
-    const response = await fetch(baseURL + "/login/", {
+    const response = await fetch(BASE_URL + "/login/", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -15,8 +16,8 @@ export async function login(name, password) {
         const accessToken = data["access"];
         const refreshToken = data["refresh"];
 
-        document.cookie = `accessToken=${accessToken}; path=/; Secure; SameSite=Lax`;
-        document.cookie = `refreshToken=${refreshToken}; path=/; Secure; SameSite=Lax`;
+        Cookies.set('accessToken', accessToken);
+        Cookies.set('refreshToken', refreshToken);
 
         console.log("Login erfolgreich");
     } else {
@@ -29,7 +30,7 @@ export async function login(name, password) {
 
 export async function register(username, email, password) {
     console.log("register mit: " + username + email + password)
-    const response = await fetch(baseURL + "/register/", {
+    const response = await fetch(BASE_URL + "/register/", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
