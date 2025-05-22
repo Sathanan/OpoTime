@@ -1,0 +1,319 @@
+:root {
+  --sidebar-width-expanded: 280px;
+  --sidebar-width-collapsed: 80px;
+  --transition-speed: 0.3s;
+  --border-radius: 12px;
+  --shadow-light: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
+  transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-light);
+  backdrop-filter: blur(10px);
+}
+
+.sidebar.expanded {
+  width: var(--sidebar-width-expanded);
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-width-collapsed);
+}
+
+.header {
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--gradient);
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.logoIcon {
+  font-size: 28px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.logoText {
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  opacity: 1;
+  transform: translateX(0);
+  transition: all var(--transition-speed) ease;
+}
+
+.collapsed .logoText {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+
+.nav {
+  flex: 1;
+  padding: 20px 0;
+  overflow-y: auto;
+}
+
+.navList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navItem {
+  position: relative;
+}
+
+.navButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+  position: relative;
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+  margin-right: 12px;
+}
+
+.navButton:hover {
+  background: var(--bg-hover);
+  color: var(--accent-color);
+  transform: translateX(4px);
+}
+
+.navButton.active {
+  background: var(--bg-active);
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.navIcon {
+  font-size: 20px;
+  min-width: 20px;
+  text-align: center;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  transition: transform var(--transition-speed) ease;
+}
+
+.navButton:hover .navIcon {
+  transform: scale(1.1);
+}
+
+.navLabel {
+  opacity: 1;
+  transform: translateX(0);
+  transition: all var(--transition-speed) ease;
+  white-space: nowrap;
+}
+
+.collapsed .navLabel {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+
+.activeIndicator {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 24px;
+  background: var(--accent-color);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.footer {
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.controlButton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: all var(--transition-speed) ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.controlButton:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.controlButton:active {
+  transform: translateY(0);
+}
+
+.controlIcon {
+  font-size: 16px;
+  min-width: 16px;
+  text-align: center;
+  transition: transform var(--transition-speed) ease;
+}
+
+.controlButton:hover .controlIcon {
+  transform: rotate(5deg) scale(1.1);
+}
+
+.controlLabel {
+  opacity: 1;
+  transform: translateX(0);
+  transition: all var(--transition-speed) ease;
+  white-space: nowrap;
+}
+
+.collapsed .controlLabel {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.expanded {
+    transform: translateX(0);
+    box-shadow: var(--shadow-hover);
+  }
+  
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar.expanded {
+    width: 100vw;
+  }
+  
+  .header {
+    padding: 20px;
+  }
+  
+  .navButton {
+    padding: 18px 20px;
+    font-size: 16px;
+  }
+  
+  .navIcon {
+    font-size: 22px;
+  }
+}
+
+.nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nav::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.nav::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+.collapsed .navButton::after {
+  content: attr(title);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-speed) ease;
+  box-shadow: var(--shadow-light);
+  border: 1px solid var(--border-color);
+  z-index: 1001;
+}
+
+.collapsed .navButton:hover::after {
+  opacity: 1;
+}
+
+.collapsed .controlButton::after {
+  content: attr(title);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-speed) ease;
+  box-shadow: var(--shadow-light);
+  border: 1px solid var(--border-color);
+  z-index: 1001;
+}
+
+.collapsed .controlButton:hover::after {
+  opacity: 1;
+}
