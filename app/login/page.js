@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from 'next/image';
 import styles from "../auth.module.css";
+import { login } from "../api/auth";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,6 +11,11 @@ export default function Login() {
   const togglePassword = () => {
     setShowPassword((prev) => !prev);
   };
+  async function handleLogin() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    await login(email, password);
+  }
 
   return (
     <main className={styles.mainAuth}>
@@ -72,8 +78,15 @@ export default function Login() {
               <a href="#" className={styles.forgotPassword}>Forgot password?</a>
             </div>
 
-            <button type="submit" className={styles.loginButton}>Login</button>
-
+            <button
+              type="submit"
+              className={styles.loginButton}
+              onClick={() => {
+                handleLogin();
+              }}
+            >
+              Login
+            </button>
             <div className={styles.registerLink}>
               Don't have an account? <a href="../register">Register</a>
             </div>
