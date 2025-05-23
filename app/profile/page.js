@@ -53,21 +53,10 @@ const Profile = () => {
     achievements: 28,
     efficiency: 94
   });
-
-  const achievements = [
-    { icon: Trophy, name: 'First Project', description: 'Completed your first project', earned: true },
-    { icon: Target, name: '100 Hours', description: 'Tracked 100 hours of work', earned: true },
-    { icon: Zap, name: 'Speed Demon', description: 'Completed 10 tasks in one day', earned: true },
-    { icon: Star, name: 'Consistent', description: '30-day tracking streak', earned: false },
-    { icon: BarChart3, name: 'Analyzer', description: 'Generated 50 reports', earned: false },
-    { icon: CheckCircle, name: 'Perfectionist', description: '95% task completion rate', earned: true }
-  ];
-
   const recentActivity = [
     { type: 'project', title: 'Completed "Mobile App UI"', time: '2 hours ago', color: 'success' },
     { type: 'task', title: 'Updated project requirements', time: '4 hours ago', color: 'info' },
-    { type: 'timer', title: 'Worked on development task', time: '6 hours ago', color: 'primary' },
-    { type: 'achievement', title: 'Earned "Speed Demon" badge', time: '1 day ago', color: 'warning' }
+    { type: 'timer', title: 'Worked on development task', time: '6 hours ago', color: 'primary' }
   ];
 
   const handleSave = () => {
@@ -90,7 +79,6 @@ const Profile = () => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
     { id: 'activity', label: 'Activity', icon: Clock },
-    { id: 'achievements', label: 'Achievements', icon: Award },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
@@ -180,7 +168,7 @@ const Profile = () => {
           </div>
           <div className={styles.statContent}>
             <h3 className={styles.statValue}>{stats.averageDaily}h</h3>
-            <p className={styles.statLabel}>Daily Average</p>
+            <p className={styles.statLabel}>Daily Hours</p>
           </div>
         </div>
         <div className={styles.statCard}>
@@ -344,54 +332,10 @@ const Profile = () => {
           </div>
         )}
 
-        {activeTab === 'achievements' && (
-          <div className={styles.achievementsContent}>
-            <h2 className={styles.sectionTitle}>Achievements</h2>
-            <div className={styles.achievementsGrid}>
-              {achievements.map((achievement, index) => {
-                const IconComponent = achievement.icon;
-                return (
-                  <div
-                    key={index}
-                    className={`${styles.achievementCard} ${achievement.earned ? styles.earned : styles.locked}`}
-                  >
-                    <div className={styles.achievementIcon}>
-                      <IconComponent size={24} />
-                    </div>
-                    <div className={styles.achievementContent}>
-                      <h3 className={styles.achievementName}>{achievement.name}</h3>
-                      <p className={styles.achievementDescription}>{achievement.description}</p>
-                    </div>
-                    {achievement.earned && (
-                      <div className={styles.achievementBadge}>
-                        <CheckCircle size={16} />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {activeTab === 'settings' && (
           <div className={styles.settingsContent}>
             <h2 className={styles.sectionTitle}>Preferences</h2>
             <div className={styles.settingsGrid}>
-              <div className={styles.settingItem}>
-                <div className={styles.settingInfo}>
-                  <h3 className={styles.settingName}>Email Notifications</h3>
-                  <p className={styles.settingDescription}>Receive updates about your projects and tasks</p>
-                </div>
-                <label className={styles.switch}>
-                  <input
-                    type="checkbox"
-                    checked={profileData.notifications}
-                    onChange={(e) => handleInputChange('notifications', e.target.checked)}
-                  />
-                  <span className={styles.slider}></span>
-                </label>
-              </div>
               <div className={styles.settingItem}>
                 <div className={styles.settingInfo}>
                   <h3 className={styles.settingName}>Dark Mode</h3>
