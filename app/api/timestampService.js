@@ -1,127 +1,131 @@
-import { BASE_URL } from "./utilis/config";
 import Timestamp from "./models/timestamp";
+import { showError } from "./utilis/utillity";
+import { makeApiCall } from "./utilis/basefunctions";
+import { getCookies } from "./utilis/cookieManager";
 
-import Cookies from 'js-cookie';
-
+/**
+ * Holt alle Zeitstempel eines Benutzers seit einem bestimmten Zeitpunkt.
+ * @param {string} since - ISO-Datum oder Zeitstempel, ab wann gesucht wird.
+ * @returns {Promise<Timestamp[]>} Liste von Timestamp-Modellen.
+ */
 export async function getTimestampsByUser(since) {
-    const token = Cookies.get('accessToken');
+    const [accessToken, refreshToken, userID] = getCookies();
+    const params = `?since=${since}&user_id=${userID}`;
 
-    const response = await fetch(`${BASE_URL}/time-entries/`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
+    try {
+        const response = await makeApiCall("time-entries", "GET", null, true, params);
 
-        params: {
-            since: since,
-            user_id: 'USER_ID',
+        if (!response.ok) {
+            showError("Timestamps holen by User", response);
         }
-    });
 
-    if (!response.ok) {
-        throw new Error('Fehler beim Abrufen der Zeitstempel');
+        const timestampData = await response.json();
+        return convertJsonToModel(timestampData);
+    } catch (err) {
+        showError("Timestamps holen by User", response);
     }
-
-    const timestampData = await response.json();
-    return convertJsonToModel(timestampData);
 }
+
+/**
+ * Holt alle Zeitstempel eines Projekts seit einem bestimmten Zeitpunkt.
+ * @param {string} since - ISO-Datum oder Zeitstempel.
+ * @param {number} projectId - Die ID des Projekts.
+ * @returns {Promise<Timestamp[]>} Liste von Timestamp-Modellen.
+ */
 export async function getTimestampsByProject(since, projectId) {
-    const token = Cookies.get('accessToken');
+    const params = `?since=${since}&project_id=${projectId}`;
 
-    const response = await fetch(`${BASE_URL}/time-entries/`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
-        params: {
-            since: since,
-            project_id: projectId,
+    try {
+        const response = await makeApiCall("time-entries", "GET", null, true, params);
+
+        if (!response.ok) {
+            showError("Timestamps holen by Project", response);
         }
-    });
 
-    if (!response.ok) {
-        throw new Error('Fehler beim Abrufen der Zeitstempel');
+        const timestampData = await response.json();
+        return convertJsonToModel(timestampData);
+    } catch (err) {
+        showError("Timestamps holen by Project", response);
     }
-
-    const timestampData = await response.json();
-    return convertJsonToModel(timestampData);
 }
 
-export async function createTimestamp(project, type) {
-    const token = Cookies.get('accessToken');
+/**
+ * Erstellt einen neuen Timestamp-Eintrag.
+ * @param {Object} projectID - Projektid.
+ * @param {string} type - Typ des Timestamps (z. B. "start", "end").
+ * @returns {Promise<Timestamp>} Der neue Timestamp.
+ */
+export async function createTimestamp(projectID, type) {
+    try {
+        const body = JSON.stringify({ projectID, type });
+        const response = await makeApiCall("time-entries", "POST", body, true);
 
-    const response = await fetch(`${BASE_URL}/time-entries/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(project, type),
-    });
+        if (!response.ok) {
+            showError("Erstellen von Timestamp", response);
+        }
 
-    if (!response.ok) {
-        throw new Error('Fehler beim Erstellen des Zeitstempels');
+        const timestampData = await response.json();
+        return convertJsonToModel(timestampData);
+    } catch (err) {
+        showError("Erstellen von Timestamp", response);
     }
-
-    const timestampData = await response.json();
-    return convertJsonToModel(timestampData);
 }
 
+/**
+ * Aktualisiert den Typ eines bestehenden Timestamp-Eintrags.
+ * @param {number} entryId - Die ID des Timestamps.
+ * @param {string} type - Der neue Typ (z. B. "start", "end").
+ * @returns {Promise<Timestamp>} Der aktualisierte Timestamp.
+ */
 export async function updateTimestamp(entryId, type) {
-    const token = Cookies.get('accessToken');
-
-    const response = await fetch(`${BASE_URL}/time-entries/`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+    try {
+        const body = JSON.stringify({
             entry_id: entryId,
             type,
-        }),
-    });
+        });
+        const response = await makeApiCall("time-entries", "PATCH", body, true);
 
-    if (!response.ok) {
-        throw new Error('Fehler beim Aktualisieren des Zeitstempels');
+        if (!response.ok) {
+            showError("Aktualisierung eines Timestamps", response);
+        }
+
+        const timestampData = await response.json();
+        return convertJsonToModel(timestampData);
+    } catch (err) {
+        showError("Aktualisierung eines Timestamps", response);
     }
-
-    const timestampData = await response.json();
-    return convertJsonToModel(timestampData);
 }
 
+/**
+ * Löscht einen Timestamp anhand seiner ID.
+ * @param {number} entryId - Die ID des Timestamps.
+ * @returns {Promise<{message: string}>} Erfolgsnachricht.
+ */
 export async function deleteTimestamp(entryId) {
-    const token = Cookies.get('accessToken');
+    try {
+        const response = await makeApiCall("time-entries", "DELETE", null, true, `?entry_id=${entryId}`);
 
-    const response = await fetch(`${BASE_URL}/time-entries/`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
-        params: {
-            entry_id: entryId,
-        },
-    });
+        if (!response.ok) {
+            showError("Löschen von Timestamp", response);
+        }
 
-    if (!response.ok) {
-        throw new Error('Fehler beim Löschen des Zeitstempels');
+        return { message: 'Timestamp erfolgreich gelöscht' };
+    } catch (err) {
+        showError("Löschen von Timestamp", response);
     }
-
-    return { message: 'Projekt erfolgreich gelöscht' };
 }
 
+/**
+ * Wandelt ein JSON-Array in eine Liste von Timestamp-Objekten um.
+ * @param {Array<Object>} data - Die rohen Zeitstempeldaten.
+ * @returns {Timestamp[]} Liste von Timestamp-Modellen.
+ */
 function convertJsonToModel(data) {
-    var convertedData = data.map(data => {
-        return new Timestamp(
-            data.id,
-            data.user,
-            data.project,
-            data.timestamp,
-            data.type
-        );
-    });
-    return convertedData;
+    return data.map(data => new Timestamp(
+        data.id,
+        data.user,
+        data.project,
+        data.timestamp,
+        data.type
+    ));
 }

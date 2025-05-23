@@ -1,62 +1,49 @@
-import { BASE_URL } from "./utilis/config";
-import Cookies from 'js-cookie';
+import { setCookies, removeCookies } from "./utilis/cookieManager";
+import { makeApiCall } from "./utilis/basefunctions";
+import { useRouter } from 'next/navigation';
+import { showError } from "./utilis/utillity";
 
 export async function login(name, password) {
-    const response = await fetch(BASE_URL + "/login/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ username: name, password })
-    });
+    const body = JSON.stringify({ username: name, password });
+    const response = await makeApiCall("login", "POST", body, false);
 
     if (response.ok) {
         const data = await response.json();
 
-        const accessToken = data["access"];
-        const refreshToken = data["refresh"];
+        setCookies(data["access"], data["refresh"], data["id"])
 
-        Cookies.set('accessToken', accessToken);
-        Cookies.set('refreshToken', refreshToken);
         console.log("Login erfolgreich");
         return true;
     } else {
-        const errorData = await response.json();
-        console.error("Login fehlgeschlagen:", errorData);
-        alert("Login fehlgeschlagen: " + (errorData.error || "Unbekannter Fehler"));
+        showError("Login", response);
         return false;
     }
 }
 
 
 export async function register(username, email, password) {
-    console.log("register mit: " + username + email + password)
-    const response = await fetch(BASE_URL + "/register/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            username: username,
-            email: email,
-            password: password,
-        }),
+    const body = JSON.stringify({
+        username: username,
+        email: email,
+        password: password,
     });
+    const response = await makeApiCall("register", "POST", body, false);
 
     if (response.ok) {
         const data = await response.json();
 
-        const accessToken = data["access"];
-        const refreshToken = data["refresh"];
+        setCookies(data["access"], data["refresh"], data["id"])
 
-        Cookies.set('accessToken', accessToken);
-        Cookies.set('refreshToken', refreshToken);
-        console.log("Register erfolgreich");
+        console.log("Registrierung erfolgreich");
         return true;
     } else {
-        const errorData = await response.json();
-        console.error("Register fehlgeschlagen:", errorData);
-        alert("Register fehlgeschlagen: " + (errorData.error || "Unbekannter Fehler"));
+        showError("Registrierung", response);
         return false;
     }
+}
+
+export function logout() {
+    removeCookies();
+    const router = useRouter()
+    router.push("/login");
 }
