@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { 
   Clock, 
   Home, 
@@ -22,10 +23,10 @@ import styles from './css/sidebar.module.css';
 
 interface SidebarProps {
   className?: string;
-  onNavigate?: (path: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
+const Sidebar: React.FC<SidebarProps> = ({ className }) => {
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeItem, setActiveItem] = useState('dashboard');
@@ -61,9 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
 
   const handleItemClick = (item: any) => {
     setActiveItem(item.id);
-    if (onNavigate) {
-      onNavigate(item.path);
-    }
+    router.push(item.path);
     if (isMobile) {
       setIsExpanded(false);
     }
