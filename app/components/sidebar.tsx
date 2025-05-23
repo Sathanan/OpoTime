@@ -15,12 +15,13 @@ import {
   Moon, 
   ChevronLeft, 
   ChevronRight,
+  LogOut,
   Timer,
   Play,
   Pause
 } from 'lucide-react';
 import styles from './css/sidebar.module.css';
-
+import { logout } from '../api/auth';
 interface SidebarProps {
   className?: string;
   onToggle?: (expanded: boolean) => void;
@@ -76,6 +77,12 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    if (isMobile) {
+      setIsExpanded(false);
+    }
+  };
   const toggleSidebar = () => {
     setIsExpanded(!isExpanded);
   };
@@ -182,6 +189,18 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
             </div>
             <span className={styles.controlLabel}>
               {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+            </span>
+          </button>
+          <button
+            className={`${styles.controlButton} ${styles.collapse}`}
+            onClick={handleLogout}
+            title={isExpanded ? 'Collapse Sidebar' : 'Expand Sidebar'}
+          >
+            <div className={styles.controlIcon}>
+              {<LogOut size={18} />}
+            </div>
+            <span className={styles.controlLabel}>
+              {isExpanded ? 'Logout' : 'Login'}
             </span>
           </button>
           <button
