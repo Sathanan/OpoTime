@@ -15,9 +15,8 @@ export async function login(name, password) {
 
         const accessToken = data["access"];
         const refreshToken = data["refresh"];
-
-        Cookies.set('accessToken', accessToken);
-        Cookies.set('refreshToken', refreshToken);
+        Cookies.set('accessToken', accessToken, {path: '/'});
+        Cookies.set('refreshToken', refreshToken,{path: '/'});
         console.log("Login erfolgreich");
         return true;
     } else {
@@ -49,8 +48,8 @@ export async function register(username, email, password) {
         const accessToken = data["access"];
         const refreshToken = data["refresh"];
 
-        Cookies.set('accessToken', accessToken);
-        Cookies.set('refreshToken', refreshToken);
+        Cookies.set('accessToken', accessToken, {path: '/'});
+        Cookies.set('refreshToken', refreshToken, {path: '/'});
         console.log("Register erfolgreich");
         return true;
     } else {

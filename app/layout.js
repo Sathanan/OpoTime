@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ClientLayout from "./components/clientLayout"; // New component
+import ClientLayout from "./components/clientLayout";
+import RequireAuth from "./components/requireAuth"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,7 +22,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <ClientLayout>{children}</ClientLayout>
+        <RequireAuth>
+          <ClientLayout>{children}</ClientLayout>
+        </RequireAuth>
       </body>
     </html>
   );
