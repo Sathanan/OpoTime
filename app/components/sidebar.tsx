@@ -23,9 +23,10 @@ import styles from './css/sidebar.module.css';
 
 interface SidebarProps {
   className?: string;
+  onToggle?: (expanded: boolean) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ className }) => {
+const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -49,6 +50,13 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Notify parent component when sidebar state changes
+  useEffect(() => {
+    if (onToggle) {
+      onToggle(isExpanded);
+    }
+  }, [isExpanded, onToggle]);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },

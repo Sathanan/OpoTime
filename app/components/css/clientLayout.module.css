@@ -1,0 +1,35 @@
+/* clientLayout.module.css */
+.withSidebar {
+  display: grid;
+  grid-template-columns: 300px 1fr; /* Sidebar width + remaining space */
+  min-height: 100vh;
+  width: 100%;
+  transition: grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.withSidebar.collapsed {
+  grid-template-columns: 90px 1fr; /* Collapsed sidebar width + remaining space */
+}
+
+.mainContent {
+  padding: 24px;
+  background: var(--bg-primary);
+  min-height: 100vh;
+  overflow-x: auto;
+}
+
+/* Mobile: Sidebar overlays, so main content takes full width */
+@media (max-width: 768px) {
+  .withSidebar {
+    grid-template-columns: 1fr; /* Full width for content */
+  }
+  
+  .withSidebar.collapsed {
+    grid-template-columns: 1fr; /* Full width for content */
+  }
+  
+  .mainContent {
+    padding: 16px;
+    grid-column: 1; /* Ensure content is in first column */
+  }
+}

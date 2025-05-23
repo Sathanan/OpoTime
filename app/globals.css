@@ -43,6 +43,7 @@
 /* Optional: Standard-Schriftart und -Farbe setzen */
 html, body {
   height: 100%;
+  color: var(--text-primary);
 }
 
 [data-theme="light"] {
