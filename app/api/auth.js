@@ -1,7 +1,7 @@
 import { setCookies, removeCookies } from "./utilis/cookieManager";
 import { makeApiCall } from "./utilis/basefunctions";
 import { useRouter } from 'next/navigation';
-import { showError } from "./utilis/utillity";
+import { ShowError } from "./utilis/utillity";
 
 export async function login(name, password) {
     const body = JSON.stringify({ username: name, password });
@@ -15,7 +15,7 @@ export async function login(name, password) {
         console.log("Login erfolgreich");
         return true;
     } else {
-        showError("Login", response);
+        ShowError("Login", response);
         return false;
     }
 }
@@ -37,7 +37,7 @@ export async function register(username, email, password) {
         console.log("Registrierung erfolgreich");
         return true;
     } else {
-        showError("Registrierung", response);
+        ShowError("Registrierung", response);
         return false;
     }
 }

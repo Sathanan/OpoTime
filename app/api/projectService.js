@@ -1,5 +1,5 @@
 import Project from "./models/project";
-import { showError } from "./utilis/utillity";
+import { ShowError } from "./utilis/utillity";
 import { makeApiCall } from "./utilis/basefunctions";
 
 /**
@@ -20,14 +20,14 @@ export async function getAllProjects(projectId = null, projectName = null) {
         }
 
         if (!response.ok) {
-            showError("Alle Projekte holen", response);
+            ShowError("Alle Projekte holen", response);
         }
 
         const projectsData = await response.json();
         return convertJsonToModel(projectsData);
 
     } catch (error) {
-        showError("Alle Projekte holen", response);
+        ShowError("Alle Projekte holen", error);
     }
 }
 
@@ -42,13 +42,13 @@ export async function createProject(name) {
         const response = await makeApiCall("projects", "POST", body, true);
 
         if (!response.ok) {
-            showError("Projekte erstellen", response);
+            ShowError("Projekte erstellen", response);
         }
 
         const projectsData = await response.json();
         return convertJsonToModel(projectsData);
     } catch (error) {
-        showError("Projekte erstellen", response);
+        ShowError("Projekte erstellen", error);
     }
 }
 
@@ -64,13 +64,13 @@ export async function updateProject(projectId, name) {
         const response = await makeApiCall("projects", "PATCH", body, true);
 
         if (!response.ok) {
-            showError("Projekt updaten", response);
+            ShowError("Projekt updaten", response);
         }
 
         const projectsData = await response.json();
         return convertJsonToModel(projectsData);
     } catch (error) {
-        showError("Projekt updaten", response);
+        ShowError("Projekt updaten", error);
     }
 }
 
@@ -85,12 +85,12 @@ export async function deleteProject(projectId) {
         const response = await makeApiCall("projects", "DELETE", body, true);
 
         if (!response.ok) {
-            showError("Projekt löschen", response);
+            ShowError("Projekt löschen", response);
         }
 
         return { message: 'Projekt erfolgreich gelöscht' };
     } catch (error) {
-        showError("Projekt löschen", response);
+        ShowError("Projekt löschen", error);
     }
 }
 
@@ -104,6 +104,6 @@ function convertJsonToModel(data) {
         data.id,
         data.user,
         data.name,
-        data.invitedUsers
+        data.invited_users
     ));
 }

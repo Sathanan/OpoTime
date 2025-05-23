@@ -4,7 +4,7 @@ class Timestamp {
     this.user = user;
     this.project = project;
     this.timestamp = timestamp;
-    this.typ = type;
+    this.type = type;
   }
 }
 

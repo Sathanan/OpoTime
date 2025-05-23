@@ -1,34 +1,30 @@
-import { BASE_URL } from "./config";
-import Cookies from 'js-cookie';
+import { makeApiCall } from "./basefunctions";
+import { ShowError } from "./utillity";
+import { getCookies } from "./cookieManager";
 
-export async function getUserByID(){
-      const token = Cookies.get('accessToken');
-      const userID = Cookies.get('userID');
-
-
+export async function getUserByID() {
+    const [accessToken, refreshToken, userID] = getCookies();
+    try {
+        const response = await makeApiCall("user-search", "GET", null, true, `?user_ID=${userID}`);
+        if (response.ok) {
+            return await response.json();
+        } else {
+            ShowError("User by ID", response);
+        }
+    } catch (err) {
+        ShowError("User by ID", err);
+    }
 }
 
-export async function getUserByUsernameOrEMail(search){
-      const token = Cookies.get('accessToken');
-
-        const response = await fetch(BASE_URL + "/register/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            username: username,
-            email: email,
-            password: password,
-        }),
-    });
-
-    if (response.ok) {
-
-    }else{
-       const errorData = await response.json();
-        console.error("Register fehlgeschlagen:", errorData);
-        alert("Register fehlgeschlagen: " + (errorData.error || "Unbekannter Fehler"));
-        return false;
+export async function getUserByUsernameOrEMail(search) {
+    try {
+        const response = await makeApiCall("user-search", "GET", null, true, `?q=${search}`);
+        if (response.ok) {
+            return await response.json();
+        } else {
+            ShowError("User mit Filter", response);
+        }
+    } catch (err) {
+        ShowError("User mit Filter", err);
     }
 }
