@@ -15,6 +15,18 @@
           --border-radius: 16px;
           --shadow-light: 0 4px 20px rgba(0, 0, 0, 0.08);
           --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+          --bg-primary: #ffffff;
+          --bg-secondary: #f8fafc;
+          --bg-hover: #f1f5f9;
+          --border-color: #e2e8f0;
+          --text-primary: #1e293b;
+          --text-secondary: #64748b;
+          --accent-color: #7c3aed;
+          --success: #10b981;
+          --info: #3b82f6;
+          --warning: #f59e0b;
+          --danger: #ef4444;
+          --primary-gradient: linear-gradient(135deg, #a855f7, #06b6d4);
         }
 
         [data-theme="light"] {

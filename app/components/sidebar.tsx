@@ -120,7 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
               height={50}
             />
             <div className={styles.logoText}>
-              <span className={styles.logoTitle}>TimeTracker</span>
+              <span className={styles.logoTitle}>Opo Time</span>
               <span className={styles.logoSubtitle}>Pro</span>
             </div>
           </div>
