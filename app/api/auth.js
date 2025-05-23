@@ -33,7 +33,7 @@ export async function register(username, email, password) {
         const data = await response.json();
 
         setCookies(data["access"], data["refresh"], data["id"])
-
+        
         console.log("Registrierung erfolgreich");
         return true;
     } else {
