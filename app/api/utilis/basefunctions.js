@@ -8,7 +8,6 @@ export async function makeApiCall(additionalURL, method, requestBody = null, nee
     if (needToken) {
         token = await getAccessToken();
     }
-
     const response = await fetch(`${BASE_URL}/${additionalURL}/${parameter ? parameter : ""}`, {
         method,
         headers: {
@@ -18,7 +17,7 @@ export async function makeApiCall(additionalURL, method, requestBody = null, nee
         body: requestBody ? requestBody : null,
     });
 
-    return await response;
+    return response;
 }
 
 export async function getAccessToken() {

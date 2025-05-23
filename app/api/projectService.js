@@ -18,11 +18,9 @@ export async function getAllProjects(projectId = null, projectName = null) {
         } else {
             response = await makeApiCall("projects", "GET", null, true);
         }
-
         if (!response.ok) {
             ShowError("Alle Projekte holen", response);
         }
-
         const projectsData = await response.json();
         return convertJsonToModel(projectsData);
 
@@ -104,6 +102,16 @@ function convertJsonToModel(data) {
         data.id,
         data.user,
         data.name,
-        data.invited_users
+        data.invited_users,
+        data.description,
+        data.status,
+        data.progress,
+        data.totalTime,
+        data.todayTime,
+        data.deadline,
+        data.teamMembers,
+        data.color,
+        data.tasks,
+        data.isTimerRunning
     ));
 }
