@@ -8,6 +8,15 @@
   font-family:var(--font-geist-sans, --font-geist-mono)
 }
 
+:root {
+  --sidebar-width-expanded: 280px;
+  --sidebar-width-collapsed: 80px;
+  --transition-speed: 0.3s;
+  --border-radius: 12px;
+  --shadow-light: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
 /* Optional: Standard-Schriftart und -Farbe setzen */
 html, body {
   height: 100%;
@@ -43,3 +52,4 @@ html, body {
               color var(--transition-speed) ease,
               border-color var(--transition-speed) ease;
 }
+
