@@ -44,6 +44,5 @@ export async function register(username, email, password) {
 
 export function logout() {
     removeCookies();
-    const router = useRouter()
-    router.push("/login");
+    window.location.href = "/login";
 }
