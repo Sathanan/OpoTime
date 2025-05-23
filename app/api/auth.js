@@ -49,8 +49,8 @@ export async function register(username, email, password) {
         const accessToken = data["access"];
         const refreshToken = data["refresh"];
 
-        document.cookie = `accessToken=${accessToken}; path=/; Secure; SameSite=Lax`;
-        document.cookie = `refreshToken=${refreshToken}; path=/; Secure; SameSite=Lax`;
+        Cookies.set('accessToken', accessToken);
+        Cookies.set('refreshToken', refreshToken);
 
         console.log("Register erfolgreich");
     } else {
