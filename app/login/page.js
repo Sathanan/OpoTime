@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from 'next/image';
 import styles from "../auth.module.css";
 import { login } from "../api/auth";
-import { redirect, useRouter  } from 'next/navigation';
+import { useRouter  } from 'next/navigation';
+import Cookies from "js-cookie";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,6 +13,14 @@ export default function Login() {
   const togglePassword = () => {
     setShowPassword((prev) => !prev);
   };
+  useEffect(() => {
+    const accessToken = Cookies.get("accessToken");
+    const refreshToken = Cookies.get("refreshToken");
+
+    if (accessToken && refreshToken) {
+      router.push("/dashboard");
+    }
+  }, [router]); 
   async function handleLogin(email, password) {
     const success = await login(email, password);
      if (success) {

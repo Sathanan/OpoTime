@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import styles from "../auth.module.css";
 import { register } from "../api/auth";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 
 export default function Register() {
@@ -18,15 +19,23 @@ export default function Register() {
   const toggleConfirmPassword = () => {
     setShowConfirmPassword((prev) => !prev);
   };
+ useEffect(() => {
+    const accessToken = Cookies.get("accessToken");
+    const refreshToken = Cookies.get("refreshToken");
+
+    if (accessToken && refreshToken) {
+      router.push("/dashboard");
+    }
+  }, [router]); 
 
   async function handleRegister(name, email, password, confirmPassword) {
     if (password !== confirmPassword) {
       alert("Die Passwörter stimmen nicht überein");
       return;
     }
-  
+
     const success = await register(name, email, password);
-  
+
     if (success) {
       console.log("Registration successful, redirecting to dashboard...");
       router.push("/dashboard");
