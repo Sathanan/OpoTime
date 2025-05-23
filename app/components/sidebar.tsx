@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
   }, []);
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/' },
+    { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
     { id: 'timer', label: 'Time Tracker', icon: Timer, path: '/timer' },
     { id: 'projects', label: 'Projects', icon: FolderOpen, path: '/projects' },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare, path: '/tasks' },
@@ -182,18 +182,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
             {isDarkMode ? 'Light Mode' : 'Dark Mode'}
           </span>
         </button>
-
-        <button
-          className="controlButton settings"
-          onClick={() => onNavigate && onNavigate('/settings')}
-          title="Settings"
-        >
-          <div className="controlIcon">
-            <Settings size={18} />
-          </div>
-          <span className="controlLabel">Settings</span>
-        </button>
-
         <button
           className="controlButton collapse"
           onClick={toggleSidebar}
@@ -633,6 +621,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
           box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
           border: 1px solid var(--border-color);
           z-index: 1001;
+        }
+
+        .collapsed .quickTimer {
+           display: none;
         }
 
         .collapsed .navButton:hover::after,

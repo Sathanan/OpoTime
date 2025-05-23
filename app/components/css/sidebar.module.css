@@ -13,6 +13,8 @@
   backdrop-filter: blur(10px);
 }
 
+
+
 .sidebar.expanded {
   width: var(--sidebar-width-expanded);
 }
