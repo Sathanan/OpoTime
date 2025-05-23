@@ -4,19 +4,19 @@ import { useState } from "react";
 import Image from 'next/image';
 import styles from "../auth.module.css";
 import { login } from "../api/auth";
-import { redirect } from 'next/navigation';
+import { redirect, useRouter  } from 'next/navigation';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
-
+  const router = useRouter()
   const togglePassword = () => {
     setShowPassword((prev) => !prev);
   };
   async function handleLogin(email, password) {
     const success = await login(email, password);
      if (success) {
-    redirect('/dashboard');
-  }
+      router.push('/dashboard')
+    }
   }
 
   return (

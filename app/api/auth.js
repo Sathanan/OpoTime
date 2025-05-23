@@ -51,11 +51,12 @@ export async function register(username, email, password) {
 
         Cookies.set('accessToken', accessToken);
         Cookies.set('refreshToken', refreshToken);
-
         console.log("Register erfolgreich");
+        return true;
     } else {
         const errorData = await response.json();
         console.error("Register fehlgeschlagen:", errorData);
         alert("Register fehlgeschlagen: " + (errorData.error || "Unbekannter Fehler"));
+        return false;
     }
 }

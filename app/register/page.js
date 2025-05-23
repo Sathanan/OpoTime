@@ -4,27 +4,13 @@ import { useState } from "react";
 import Image from "next/image";
 import styles from "../auth.module.css";
 import { register } from "../api/auth";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  async function handleRegister(name, email, password, confirmPassword) {
-  if (password !== confirmPassword) {
-    alert("Die Passwörter stimmen nicht überein");
-    return;
-  }
-  console.log('before redirect');
-  const success = await register(name, email, password);
-  if (success) {
-    console.log('in redirect');
-    redirect('/dashboard');
-  }
-}
-
-
+  const router = useRouter()
   const togglePassword = () => {
     setShowPassword((prev) => !prev);
   };
@@ -34,13 +20,21 @@ export default function Register() {
   };
 
   async function handleRegister(name, email, password, confirmPassword) {
-    if (password == confirmPassword) {
-      await register(name, email, password);
+    if (password !== confirmPassword) {
+      alert("Die Passwörter stimmen nicht überein");
+      return;
     }
-    else {
-      alert("Die Passwörter stimmen nicht überein")
+  
+    const success = await register(name, email, password);
+  
+    if (success) {
+      console.log("Registration successful, redirecting to dashboard...");
+      router.push("/dashboard");
+    } else {
+      alert("Registrierung fehlgeschlagen. Bitte versuche es erneut.");
     }
   }
+
   return (
     <main className={styles.mainAuth}>
       <div className={styles.authContContext}>
