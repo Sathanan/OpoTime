@@ -20,6 +20,7 @@ export async function getAllProjects(projectId = null, projectName = null) {
         }
         if (!response.ok) {
             ShowError("Alle Projekte holen", response);
+            return;
         }
         const projectsData = await response.json();
         return convertJsonToModel(projectsData);
@@ -31,16 +32,17 @@ export async function getAllProjects(projectId = null, projectName = null) {
 
 /**
  * Erstellt ein neues Projekt mit dem gegebenen Namen.
- * @param {string} name - Der Name des neuen Projekts.
+ * @param {Project} project - Der Name des neuen Projekts.
  * @returns {Promise<Project>} Das neu erstellte Projekt.
  */
-export async function createProject(name) {
+export async function createProject(project) {
     try {
-        const body = JSON.stringify({ name });
+        const body = JSON.stringify(project);
         const response = await makeApiCall("projects", "POST", body, true);
 
         if (!response.ok) {
             ShowError("Projekte erstellen", response);
+            return;
         }
 
         const projectsData = await response.json();
@@ -98,20 +100,40 @@ export async function deleteProject(projectId) {
  * @returns {Project[]} Liste von Projekt-Modellen.
  */
 function convertJsonToModel(data) {
-    return data.map(data => new Project(
-        data.id,
-        data.user,
-        data.name,
-        data.invited_users,
-        data.description,
-        data.status,
-        data.progress,
-        data.totalTime,
-        data.todayTime,
-        data.deadline,
-        data.teamMembers,
-        data.color,
-        data.tasks,
-        data.isTimerRunning
-    ));
+    if (Array.isArray(data)) {
+        return data.map(d => new Project(
+            d.id,
+            d.user,
+            d.name,
+            d.invited_users,
+            d.description,
+            d.status,
+            d.progress,
+            d.totalTime,
+            d.todayTime,
+            d.deadline,
+            d.teamMembers,
+            d.color,
+            d.tasks,
+            d.isTimerRunning
+        ));
+    } else {
+        return new Project(
+            data.id,
+            data.user,
+            data.name,
+            data.invited_users,
+            data.description,
+            data.status,
+            data.progress,
+            data.totalTime,
+            data.todayTime,
+            data.deadline,
+            data.teamMembers,
+            data.color,
+            data.tasks,
+            data.isTimerRunning
+        );
+    }
 }
+
