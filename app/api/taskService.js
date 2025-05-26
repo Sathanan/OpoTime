@@ -153,5 +153,8 @@ function convertJsonToModel(data) {
         data.assigned_to,
         data.text,
         data.status,
+        data.priority,
+        data.due_date,
+        data.progress,
     ));
 }
