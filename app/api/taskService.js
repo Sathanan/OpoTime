@@ -67,6 +67,27 @@ export async function getTaskByID(taskID) {
 }
 
 /**
+ * Holt eine einzelne Aufgabe anhand ihrer ID.
+ * @param {string} priority - Die Priority (Wichtigkeit) der Aufgabe.
+ * @returns {Promise<Task[]>} Einzelnes Task-Modell als Liste.
+ */
+export async function getTaskByPriority(priority) {
+    try {
+        const param = `?priority=${priority}`;
+        const response = await makeApiCall("task", "GET", null, true, param);
+
+        if (!response.ok) {
+            ShowError("Alle Aufgaben holen by priority", response);
+        }
+
+        const data = await response.json();
+        return convertJsonToModel(data);
+    } catch (err) {
+        ShowError("Alle Aufgaben holen by priority", err);
+    }
+}
+
+/**
  * Erstellt eine neue Aufgabe und weist sie dem aktuellen Benutzer zu.
  * @param {number} projectID - Die ID des Projekts.
  * @param {string} status - Der Status der Aufgabe.
@@ -153,5 +174,8 @@ function convertJsonToModel(data) {
         data.assigned_to,
         data.text,
         data.status,
+        data.priority,
+        data.due_date,
+        data.progress,
     ));
 }

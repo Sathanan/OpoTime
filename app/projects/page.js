@@ -22,6 +22,10 @@ import {
 import styles from './projects.module.css';
 import { getAllProjects } from '../api/projectService';
 import AddProjectModal from '../components/addProjectModal';
+import Project from '../api/models/project';
+import { getCookies } from '../api/utilis/cookieManager';
+import { createProject } from '../api/projectService';
+import { getUserByID } from '../api/utilis/user';
 
 const ProjectsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,7 +34,6 @@ const ProjectsPage = () => {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Mock data - in einer echten App würde das aus einer API kommen
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
@@ -98,6 +101,14 @@ const ProjectsPage = () => {
 
   const handleAddProjectClick = async (callback) => {
     setShowAddModal(true);
+  }
+
+  const clickCreateProject = async (projectData) => {
+    const project = new Project(projectData.id, projectData.user, projectData.name, projectData.invited_users, projectData.description, projectData.status, projectData.progress, projectData.total_time, projectData.today_time, projectData.deadline, projectData.color);
+    const created = await createProject(project);
+    if(created){
+        await fetchProjects(); 
+    }
   }
 
   return (
@@ -238,6 +249,7 @@ const ProjectsPage = () => {
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSubmit={(projectData) => {
+            clickCreateProject(projectData);
             setShowAddModal(false);
           }}
         />

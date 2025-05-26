@@ -3,29 +3,27 @@ class Project {
     id,
     user,
     name,
-    invitedUsers,
+    invited_users,
     description,
     status,
     progress,
-    totalTime,
-    todayTime,
+    total_time,
+    today_time,
     deadline,
-    teamMembers,
     color,
-    tasks,
-    isTimerRunning
+    tasks = [],
+    isTimerRunning = false,
   ) {
     this.id = id;
     this.user = user;
     this.name = name;
-    this.invitedUsers = invitedUsers;
+    this.invited_users = invited_users;
     this.description = description;
     this.status = status;
     this.progress = progress;
-    this.totalTime = totalTime;
-    this.todayTime = todayTime;
+    this.total_time = total_time;
+    this.today_time = today_time;
     this.deadline = deadline;
-    this.teamMembers = teamMembers;
     this.color = color;
     this.tasks = tasks; 
     this.isTimerRunning = isTimerRunning;

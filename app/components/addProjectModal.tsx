@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
-import { 
-  X, 
-  Calendar, 
-  Users, 
-  Target, 
-  FileText, 
+import {
+  X,
+  Calendar,
+  Users,
+  Target,
+  FileText,
   Palette,
   Clock,
   Plus,
@@ -29,13 +29,14 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    status: 'planning',
+    status: 'active',
     deadline: '',
-    estimatedHours: '',
+    progress: "",
+    today_time: 0,
+    total_time: '',
     color: '#3B82F6',
-    teamMembers: [] as TeamMember[],
+    invited_users: [],
     priority: 'medium',
-    tags: [] as string[]
   });
 
   const [newMemberName, setNewMemberName] = useState('');
@@ -55,9 +56,9 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
   ];
 
   const statusOptions = [
-    { value: 'planning', label: 'Planung', color: '#6B7280' },
+    { value: 'completed', label: 'Abgeschlossen', color: '#6B7280' },
     { value: 'active', label: 'Aktiv', color: '#10B981' },
-    { value: 'on-hold', label: 'Pausiert', color: '#F59E0B' }
+    { value: 'paused', label: 'Pausiert', color: '#F59E0B' }
   ];
 
   const priorityOptions = [
@@ -83,13 +84,13 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
       const deadlineDate = new Date(formData.deadline);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       if (deadlineDate < today) {
         newErrors.deadline = 'Deadline muss in der Zukunft liegen';
       }
     }
 
-    if (!formData.estimatedHours || parseInt(formData.estimatedHours) <= 0) {
+    if (!formData.total_time || parseInt(formData.total_time) <= 0) {
       newErrors.estimatedHours = 'Geschätzte Stunden müssen größer als 0 sein';
     }
 
@@ -122,7 +123,7 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
 
       setFormData(prev => ({
         ...prev,
-        teamMembers: [...prev.teamMembers, newMember]
+        teamMembers: [...prev.invited_users, newMember]
       }));
 
       setNewMemberName('');
@@ -133,34 +134,16 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
   const removeTeamMember = (id: string) => {
     setFormData(prev => ({
       ...prev,
-      teamMembers: prev.teamMembers.filter(member => member.id !== id)
-    }));
-  };
-
-  const addTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, newTag.trim()]
-      }));
-      setNewTag('');
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(t => t !== tag)
+      teamMembers: prev.invited_users.filter(member => member.id !== id)
     }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (validateForm()) {
       const projectData = {
         ...formData,
-        id: Date.now().toString(),
         progress: 0,
         totalTime: '00:00:00',
         todayTime: '00:00:00',
@@ -178,13 +161,14 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
     setFormData({
       name: '',
       description: '',
+      progress:"",
+      today_time: 0,
       status: 'planning',
       deadline: '',
-      estimatedHours: '',
+      total_time: '',
       color: '#3B82F6',
-      teamMembers: [],
-      priority: 'medium',
-      tags: []
+      invited_users: [],
+      priority: 'medium'
     });
     setErrors({});
     setNewMemberName('');
@@ -313,13 +297,13 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
                 </label>
                 <input
                   type="number"
-                  value={formData.estimatedHours}
-                  onChange={(e) => handleInputChange('estimatedHours', e.target.value)}
-                  className={`${styles.input} ${errors.estimatedHours ? styles.inputError : ''}`}
+                  value={formData.total_time}
+                  onChange={(e) => handleInputChange('total_time', e.target.value)}
+                  className={`${styles.input} ${errors.total_time ? styles.inputError : ''}`}
                   placeholder="z.B. 40"
                   min="1"
                 />
-                {errors.estimatedHours && <span className={styles.errorText}>{errors.estimatedHours}</span>}
+                {errors.estimatedHours && <span className={styles.errorText}>{errors.total_time}</span>}
               </div>
             </div>
 
@@ -342,104 +326,7 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
                 ))}
               </div>
             </div>
-
-            {/* Team Mitglieder */}
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                <Users size={16} />
-                Team Mitglieder
-              </label>
-              
-              <div className={styles.teamMemberInput}>
-                <input
-                  type="text"
-                  value={newMemberName}
-                  onChange={(e) => setNewMemberName(e.target.value)}
-                  className={styles.input}
-                  placeholder="Name"
-                />
-                <input
-                  type="email"
-                  value={newMemberEmail}
-                  onChange={(e) => setNewMemberEmail(e.target.value)}
-                  className={styles.input}
-                  placeholder="E-Mail"
-                />
-                <button
-                  type="button"
-                  onClick={addTeamMember}
-                  className={styles.addButton}
-                  disabled={!newMemberName.trim() || !newMemberEmail.trim()}
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-
-              {formData.teamMembers.length > 0 && (
-                <div className={styles.teamMembersList}>
-                  {formData.teamMembers.map(member => (
-                    <div key={member.id} className={styles.teamMember}>
-                      <div className={styles.memberInfo}>
-                        <span className={styles.memberName}>{member.name}</span>
-                        <span className={styles.memberEmail}>{member.email}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeTeamMember(member.id)}
-                        className={styles.removeButton}
-                      >
-                        <Minus size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-
-            {/* Tags */}
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                Tags
-              </label>
-              
-              <div className={styles.tagInput}>
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  className={styles.input}
-                  placeholder="Tag hinzufügen..."
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                />
-                <button
-                  type="button"
-                  onClick={addTag}
-                  className={styles.addButton}
-                  disabled={!newTag.trim()}
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-
-              {formData.tags.length > 0 && (
-                <div className={styles.tagsList}>
-                  {formData.tags.map(tag => (
-                    <span key={tag} className={styles.tag}>
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className={styles.tagRemove}
-                      >
-                        <X size={12} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
           <div className={styles.modalFooter}>
             <button
               type="button"

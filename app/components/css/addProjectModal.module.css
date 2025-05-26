@@ -233,7 +233,7 @@
 .addButton {
   padding: 0.75rem;
   background: var(--primary-color);
-  color: white;
+  color: rgb(0, 0, 0);
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
@@ -329,7 +329,7 @@
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
   background: var(--primary-color);
-  color: white;
+  color: rgb(0, 0, 0);
   border-radius: 1rem;
   font-size: 0.8rem;
   font-weight: 500;
@@ -338,7 +338,7 @@
 .tagRemove {
   background: none;
   border: none;
-  color: white;
+  color: rgb(0, 0, 0);
   cursor: pointer;
   padding: 0;
   display: flex;

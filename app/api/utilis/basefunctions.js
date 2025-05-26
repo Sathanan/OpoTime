@@ -1,10 +1,9 @@
 import { BASE_URL } from "./config";
-import { getCookies } from "./cookieManager";
+import { getCookies, setCookies } from "./cookieManager";
 import { logout } from "../auth";
 
 export async function makeApiCall(additionalURL, method, requestBody = null, needToken = false, parameter = null) {
     let token = "";
-
     if (needToken) {
         token = await getAccessToken();
     }
@@ -22,20 +21,18 @@ export async function makeApiCall(additionalURL, method, requestBody = null, nee
 
 export async function getAccessToken() {
     let [accessToken, refreshToken, userID] = getCookies();
-
     if (isTokenValid(accessToken)) {
         return accessToken;
     }
-
     try {
-        const body = JSON.stringify({ accessToken, refreshToken });
-        const data = await makeApiCall(refresh, "POST", body);
+        const body = JSON.stringify({ "refresh": refreshToken });
+        const response = await makeApiCall("refresh", "POST", body, false);
+        const parsedData = await response.json();
 
-        accessToken = data["access"];
-        refreshToken = data["refresh"];
+        accessToken = parsedData["access"];
+        refreshToken = parsedData["refresh"];
 
-        Cookies.set('accessToken', accessToken);
-        Cookies.set('refreshToken', refreshToken);
+        setCookies(accessToken, refreshToken, userID);
         return accessToken;
     } catch (err) {
         logout();
