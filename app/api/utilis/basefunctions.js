@@ -28,7 +28,7 @@ export async function getAccessToken() {
     }
 
     try {
-        const body = JSON.stringify({ accessToken, refreshToken });
+        const body = JSON.stringify({ refresh: refreshToken }); 
         const data = await makeApiCall(refresh, "POST", body);
 
         accessToken = data["access"];
