@@ -36,7 +36,7 @@ export async function getAccessToken() {
         return accessToken;
     } catch (err) {
         logout();
-        throw new Error("Session abgelaufen");
+        throw new Error("Session abgelaufen " + err);
     }
 }
 

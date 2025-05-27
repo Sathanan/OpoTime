@@ -13,6 +13,7 @@ export async function getAllTask() {
 
         if (!response.ok) {
             ShowError("Alle Aufgaben holen", response);
+            return;
         }
 
         const data = await response.json();
@@ -20,6 +21,7 @@ export async function getAllTask() {
 
     } catch (err) {
         ShowError("Alle Aufgaben holen", err);
+        return;
     }
 }
 
@@ -35,6 +37,7 @@ export async function getAllTaskByProject(projectID) {
 
         if (!response.ok) {
             ShowError("Alle Aufgaben holen by Projekt", response);
+            return;
         }
 
         const data = await response.json();
@@ -42,6 +45,7 @@ export async function getAllTaskByProject(projectID) {
 
     } catch (err) {
         ShowError("Alle Aufgaben holen by Projekt", err);
+        return;
     }
 }
 
@@ -57,12 +61,14 @@ export async function getTaskByID(taskID) {
 
         if (!response.ok) {
             ShowError("Alle Aufgaben holen by ID", response);
+            return;
         }
 
         const data = await response.json();
         return convertJsonToModel(data);
     } catch (err) {
         ShowError("Alle Aufgaben holen by ID", err);
+        return;
     }
 }
 
@@ -78,12 +84,14 @@ export async function getTaskByPriority(priority) {
 
         if (!response.ok) {
             ShowError("Alle Aufgaben holen by priority", response);
+            return;
         }
 
         const data = await response.json();
         return convertJsonToModel(data);
     } catch (err) {
         ShowError("Alle Aufgaben holen by priority", err);
+        return;
     }
 }
 
@@ -107,12 +115,14 @@ export async function createTask(projectID, status, text = "") {
 
         if (!response.ok) {
             ShowError("Aufgabe erstellen", response);
+            return;
         }
 
         const data = await response.json();
         return convertJsonToModel(data);
     } catch (err) {
         ShowError("Aufgabe erstellen", err);
+        return;
     }
 }
 
@@ -135,11 +145,13 @@ export async function updateTask(taskID, status, text = "") {
 
         if (!response.ok) {
             ShowError("Aufgabe aktualisieren", response);
+            return;
         }
 
         return { message: "Aufgabe erfolgreich aktualisiert" };
     } catch (err) {
         ShowError("Aufgabe aktualisieren", err);
+        return;
     }
 }
 
@@ -154,11 +166,13 @@ export async function deleteTask(taskID) {
 
         if (!response.ok) {
             ShowError("Aufgabe löschen", response);
+            return;
         }
 
         return { message: "Aufgabe erfolgreich gelöscht" };
     } catch (err) {
         ShowError("Aufgabe löschen", err);
+        return;
     }
 }
 

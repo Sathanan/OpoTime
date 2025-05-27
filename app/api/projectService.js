@@ -27,6 +27,7 @@ export async function getAllProjects(projectId = null, projectName = null) {
 
     } catch (error) {
         ShowError("Alle Projekte holen", error);
+        return;
     }
 }
 
@@ -49,28 +50,33 @@ export async function createProject(project) {
         return convertJsonToModel(projectsData);
     } catch (error) {
         ShowError("Projekte erstellen", error);
+        return;
     }
 }
 
 /**
  * Aktualisiert ein bestehendes Projekt mit neuem Namen.
- * @param {number} projectId - Die ID des zu aktualisierenden Projekts.
- * @param {string} name - Der neue Name des Projekts.
+ * @param {Project} project - Das aktualisierte Projekt in Form von Model.
  * @returns {Promise<Project>} Das aktualisierte Projekt.
  */
-export async function updateProject(projectId, name) {
+export async function updateProject(project) {
     try {
-        const body = JSON.stringify({ project_id: projectId, name });
+          const body = JSON.stringify({
+            ...project,
+            project_id: project.id,
+        });
         const response = await makeApiCall("projects", "PATCH", body, true);
 
         if (!response.ok) {
             ShowError("Projekt updaten", response);
+            return;
         }
 
         const projectsData = await response.json();
         return convertJsonToModel(projectsData);
     } catch (error) {
         ShowError("Projekt updaten", error);
+        return;
     }
 }
 
@@ -86,12 +92,20 @@ export async function deleteProject(projectId) {
 
         if (!response.ok) {
             ShowError("Projekt löschen", response);
+            return;
         }
 
         return { message: 'Projekt erfolgreich gelöscht' };
     } catch (error) {
         ShowError("Projekt löschen", error);
+        return;
     }
+}
+
+export async function updateProjectStatus(projectId, timerRunning){
+    let project = await getAllProjects(projectId);
+    project.isTimerRunning = timerRunning;
+    await updateProject(project);
 }
 
 /**
@@ -109,10 +123,9 @@ function convertJsonToModel(data) {
             d.description,
             d.status,
             d.progress,
-            d.totalTime,
-            d.todayTime,
+            d.total_time,
+            d.today_time,
             d.deadline,
-            d.teamMembers,
             d.color,
             d.tasks,
             d.isTimerRunning
@@ -126,10 +139,9 @@ function convertJsonToModel(data) {
             data.description,
             data.status,
             data.progress,
-            data.totalTime,
-            data.todayTime,
+            data.total_time,
+            data.today_time,
             data.deadline,
-            data.teamMembers,
             data.color,
             data.tasks,
             data.isTimerRunning

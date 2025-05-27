@@ -10,9 +10,11 @@ export async function getUserByID() {
             return await response.json();
         } else {
             ShowError("User by ID", response);
+            return;
         }
     } catch (err) {
         ShowError("User by ID", err);
+        return;
     }
 }
 
@@ -23,8 +25,10 @@ export async function getUserByUsernameOrEMail(search) {
             return await response.json();
         } else {
             ShowError("User mit Filter", response);
+            return;
         }
     } catch (err) {
         ShowError("User mit Filter", err);
+        return;
     }
 }

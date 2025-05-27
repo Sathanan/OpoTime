@@ -17,14 +17,16 @@ import {
   Eye,
   CheckCircle,
   AlertCircle,
-  Circle
+  Circle,
+  UserPlus,
+  X
 } from 'lucide-react';
-import styles from './projects.module.css';
+import styles from './css/projects.module.css';
 import { getAllProjects } from '../api/projectService';
-import AddProjectModal from '../components/addProjectModal';
+import AddProjectModal from './addProjectModal';
 import Project from '../api/models/project';
 import { getCookies } from '../api/utilis/cookieManager';
-import { createProject } from '../api/projectService';
+import { createProject, updateProjectStatus } from '../api/projectService';
 import { getUserByID } from '../api/utilis/user';
 
 const ProjectsPage = () => {
@@ -35,6 +37,20 @@ const ProjectsPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [projects, setProjects] = useState([]);
+  
+  // User Management States
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [projectUsers, setProjectUsers] = useState([]);
+
+  // Mock data for available users - replace with actual API call
+  const mockUsers = [
+    { id: 1, name: 'Max Mustermann', email: 'max@example.com', avatar: 'MM' },
+    { id: 2, name: 'Anna Schmidt', email: 'anna@example.com', avatar: 'AS' },
+    { id: 3, name: 'Tom Weber', email: 'tom@example.com', avatar: 'TW' },
+    { id: 4, name: 'Lisa Müller', email: 'lisa@example.com', avatar: 'LM' },
+    { id: 5, name: 'Jonas Klein', email: 'jonas@example.com', avatar: 'JK' }
+  ];
 
   useEffect(() => {
     async function fetchProjects() {
@@ -47,7 +63,19 @@ const ProjectsPage = () => {
     }
 
     fetchProjects();
+    setAvailableUsers(mockUsers); // Replace with actual API call
   }, []);
+
+  useEffect(() => {
+    if (selectedProject) {
+      // Mock project users - replace with actual project users from API
+      const mockProjectUsers = [
+        { id: 1, name: 'Max Mustermann', email: 'max@example.com', avatar: 'MM', role: 'Owner' },
+        { id: 2, name: 'Anna Schmidt', email: 'anna@example.com', avatar: 'AS', role: 'Developer' }
+      ];
+      setProjectUsers(mockProjectUsers);
+    }
+  }, [selectedProject]);
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -86,12 +114,19 @@ const ProjectsPage = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const toggleProjectTimer = (projectId) => {
-    setProjects(projects.map(project =>
-      project.id === projectId
-        ? { ...project, isTimerRunning: !project.isTimerRunning }
-        : project
+  const toggleProjectTimer = async (projectId) => {
+    const project = projects.find(p => p.id === projectId);
+    const newStatus = !project.isTimerRunning;
+
+    setProjects(projects.map(p =>
+      p.id === projectId ? { ...p, isTimerRunning: newStatus } : p
     ));
+
+    try {
+      await updateProjectStatus(projectId, newStatus); 
+    } catch (error) {
+      console.error("Timer-Status konnte nicht aktualisiert werden:", error);
+    }
   };
 
   const openProjectDetails = (project) => {
@@ -106,10 +141,47 @@ const ProjectsPage = () => {
   const clickCreateProject = async (projectData) => {
     const project = new Project(projectData.id, projectData.user, projectData.name, projectData.invited_users, projectData.description, projectData.status, projectData.progress, projectData.total_time, projectData.today_time, projectData.deadline, projectData.color);
     const created = await createProject(project);
-    if(created){
-        await fetchProjects(); 
+    if (created) {
+      await fetchProjects();
     }
   }
+
+  // User Management Functions
+  const handleAddUser = () => {
+    if (!selectedUserId) return;
+
+    const userToAdd = availableUsers.find(user => user.id === parseInt(selectedUserId));
+    if (!userToAdd) return;
+
+    // Check if user is already in project
+    if (projectUsers.find(user => user.id === userToAdd.id)) {
+      alert('Benutzer ist bereits im Projekt');
+      return;
+    }
+
+    const newUser = {
+      ...userToAdd,
+      role: 'Member'
+    };
+
+    setProjectUsers([...projectUsers, newUser]);
+    setSelectedUserId('');
+
+    // Here you would typically make an API call to add the user to the project
+    // await addUserToProject(selectedProject.id, userToAdd.id);
+  };
+
+  const handleRemoveUser = (userId) => {
+    setProjectUsers(projectUsers.filter(user => user.id !== userId));
+    // Here you would typically make an API call to remove the user from the project
+    // await removeUserFromProject(selectedProject.id, userId);
+  };
+
+  const getAvailableUsersForDropdown = () => {
+    return availableUsers.filter(user => 
+      !projectUsers.find(projectUser => projectUser.id === user.id)
+    );
+  };
 
   return (
     <div className={styles.projectsPage}>
@@ -321,13 +393,69 @@ const ProjectsPage = () => {
                   <div className={styles.teamInfo}>
                     <div className={styles.teamStat}>
                       <Users size={16} />
-                      <span>{selectedProject.teamMembers} Mitglieder</span>
+                      <span>{projectUsers.length} Mitglieder</span>
                     </div>
                     <div className={styles.deadlineStat}>
                       <Calendar size={16} />
                       <span>{new Date(selectedProject.deadline).toLocaleDateString('de-DE')}</span>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* User Management Section */}
+              <div className={styles.userManagementSection}>
+                <h4>Team-Mitglieder verwalten</h4>
+                
+                {/* Add User Form */}
+                <div className={styles.addUserForm}>
+                  <div className={styles.userDropdownContainer}>
+                    <UserPlus size={18} />
+                    <select
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      className={styles.userDropdown}
+                    >
+                      <option value="">Benutzer auswählen...</option>
+                      {getAvailableUsersForDropdown().map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} ({user.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    className={styles.addUserButton}
+                    onClick={handleAddUser}
+                    disabled={!selectedUserId}
+                  >
+                    Hinzufügen
+                  </button>
+                </div>
+
+                {/* Project Users List */}
+                <div className={styles.projectUsersList}>
+                  {projectUsers.map(user => (
+                    <div key={user.id} className={styles.userItem}>
+                      <div className={styles.userInfo}>
+                        <div className={styles.userAvatar}>
+                          {user.avatar}
+                        </div>
+                        <div className={styles.userDetails}>
+                          <span className={styles.userName}>{user.name}</span>
+                          <span className={styles.userEmail}>{user.email}</span>
+                        </div>
+                        <span className={styles.userRole}>{user.role}</span>
+                      </div>
+                      <button
+                        className={styles.removeUserButton}
+                        onClick={() => handleRemoveUser(user.id)}
+                        title="Benutzer entfernen"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -338,7 +466,7 @@ const ProjectsPage = () => {
                 </button>
                 <button className={styles.actionButton}>
                   <BarChart3 size={16} />
-                  Berichte
+                  Statistiken
                 </button>
                 <button
                   className={`${styles.actionButton} ${styles.timerAction} ${selectedProject.isTimerRunning ? styles.running : ''}`}

@@ -15,6 +15,7 @@ export async function createInvitation(project_ID, toUser_ID) {
 
         if (!response.ok) {
             ShowError("Einladung erstellen", response);
+            return;
         }
 
         const data = await response.json();
@@ -22,6 +23,7 @@ export async function createInvitation(project_ID, toUser_ID) {
 
     } catch (err) {
         ShowError("Einladung erstellen", err);
+        return;
     }
 }
 
@@ -38,12 +40,14 @@ export async function updateInvitation(invitationID, status) {
 
         if (!response.ok) {
             ShowError("Aktualisieren Einladung", response);
+            return;
         }
 
         return { message: "Einladung erfolgreich aktualisiert" };
 
     } catch (err) {
         ShowError("Aktualisieren Einladung", err);
+        return;
     }
 }
 
@@ -61,6 +65,7 @@ export async function getInvitationByProject(project_ID, accepted_only = false) 
 
         if (!response.ok) {
             ShowError("Holen der Einladungen", response);
+            return;
         }
 
         const data = await response.json();
@@ -68,6 +73,7 @@ export async function getInvitationByProject(project_ID, accepted_only = false) 
 
     } catch (err) {
         ShowError("Holen der Einladungen", err);
+        return;
     }
 }
 

@@ -17,12 +17,14 @@ export async function getTimestampsByUser(since) {
 
         if (!response.ok) {
             ShowError("Timestamps holen by User", response);
+            return;
         }
 
         const timestampData = await response.json();
         return convertJsonToModel(timestampData);
     } catch (err) {
         ShowError("Timestamps holen by User", err);
+        return;
     }
 }
 
@@ -40,12 +42,14 @@ export async function getTimestampsByProject(since, projectId) {
 
         if (!response.ok) {
             ShowError("Timestamps holen by Project", response);
+            return;
         }
 
         const timestampData = await response.json();
         return convertJsonToModel(timestampData);
     } catch (err) {
         ShowError("Timestamps holen by Project", err);
+        return;
     }
 }
 
@@ -62,12 +66,14 @@ export async function createTimestamp(projectID, type) {
 
         if (!response.ok) {
             ShowError("Erstellen von Timestamp", response);
+            return;
         }
 
         const timestampData = await response.json();
         return convertJsonToModel(timestampData);
     } catch (err) {
         ShowError("Erstellen von Timestamp", err);
+        return;
     }
 }
 
@@ -87,12 +93,14 @@ export async function updateTimestamp(entryId, type) {
 
         if (!response.ok) {
             ShowError("Aktualisierung eines Timestamps", response);
+            return;
         }
 
         const timestampData = await response.json();
         return convertJsonToModel(timestampData);
     } catch (err) {
         ShowError("Aktualisierung eines Timestamps", err);
+        return;
     }
 }
 
@@ -107,11 +115,13 @@ export async function deleteTimestamp(entryId) {
 
         if (!response.ok) {
             ShowError("Löschen von Timestamp", response);
+            return;
         }
 
         return { message: 'Timestamp erfolgreich gelöscht' };
     } catch (err) {
         ShowError("Löschen von Timestamp", err);
+        return;
     }
 }
 

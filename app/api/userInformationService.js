@@ -12,12 +12,14 @@ export async function getUserInformation() {
 
         if (!response.ok) {
             ShowError("UserInformation holen", response);
+            return;
         }
 
         const userInformationData = await response.json();
         return convertJsonToModel(userInformationData);
     } catch (err) {
         ShowError("UserInformation holen", err);
+        return;
     }
 }
 
@@ -34,12 +36,14 @@ export async function updateUserInformation(model_attribut, value) {
 
         if (!response.ok) {
             ShowError("UserInformation aktualisieren", response);
+            return;
         }
 
         const userInformationData = await response.json();
         return convertJsonToModel(userInformationData);
     } catch (err) {
         ShowError("UserInformation aktualisieren", err);
+        return;
     }
 }
 
