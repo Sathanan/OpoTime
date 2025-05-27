@@ -1,7 +1,7 @@
-import Timestamp from "./models/timestamp";
-import { ShowError } from "./utilis/utillity";
-import { makeApiCall } from "./utilis/basefunctions";
-import { getCookies } from "./utilis/cookieManager";
+import Timestamp from "../api/models/timestamp";
+import { ShowError } from "../api/utilis/utillity";
+import { makeApiCall } from "../api/utilis/basefunctions";
+import { getCookies } from "../api/utilis/cookieManager";
 
 /**
  * Holt alle Zeitstempel eines Benutzers seit einem bestimmten Zeitpunkt.
@@ -131,11 +131,22 @@ export async function deleteTimestamp(entryId) {
  * @returns {Timestamp[]} Liste von Timestamp-Modellen.
  */
 function convertJsonToModel(data) {
-    return data.map(data => new Timestamp(
-        data.id,
-        data.user,
-        data.project,
-        data.timestamp,
-        data.type
-    ));
+    if (Array.isArray(data)) {
+        return data.map(d => new Timestamp(
+            d.id,
+            d.user,
+            d.project,
+            d.timestamp,
+            d.type
+        ));
+    } else {
+        return new Timestamp(
+            data.id,
+            data.user,
+            data.project,
+            data.timestamp,
+            data.type
+        );
+    }
 }
+

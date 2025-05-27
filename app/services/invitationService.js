@@ -1,6 +1,6 @@
-import Invitation from "./models/invitation";
-import { ShowError } from "./utilis/utillity";
-import { makeApiCall } from "./utilis/basefunctions";
+import Invitation from "../api/models/invitation";
+import { ShowError } from "../api/utilis/utillity";
+import { makeApiCall } from "../api/utilis/basefunctions";
 
 /**
  * Erstellt eine Einladung zu einem Projekt für einen bestimmten Benutzer.
@@ -10,16 +10,16 @@ import { makeApiCall } from "./utilis/basefunctions";
  */
 export async function createInvitation(project_ID, toUser_ID) {
     try {
-        const body = JSON.stringify({ project_ID, "to_user": toUser_ID });
-        const response = await makeApiCall("invitation", "POST", body, true);
+        const body = JSON.stringify({ "project_id": project_ID, "to_user_id": toUser_ID });
+        console.log(body);
+        console.log(project_ID, toUser_ID)
+        const response = await makeApiCall("invitations/send", "POST", body, true);
 
         if (!response.ok) {
             ShowError("Einladung erstellen", response);
             return;
         }
-
-        const data = await response.json();
-        return convertJsonToModel(data);
+       return new Response({"message": "Einladung gesendet"})
 
     } catch (err) {
         ShowError("Einladung erstellen", err);
@@ -77,18 +77,34 @@ export async function getInvitationByProject(project_ID, accepted_only = false) 
     }
 }
 
+export async function getInvitationByid(invitation_id){
+
+}
+
 /**
  * Konvertiert die rohen JSON-Daten in eine Liste von Invitation-Modellen.
  * @param {Array<Object>} data - Array von JSON-Einladungsdaten.
  * @returns {Invitation[]} - Liste von Invitation-Objekten.
  */
 function convertJsonToModel(data) {
-    return data.map(data => new Invitation(
-        data.id,
-        data.from_user,
-        data.to_user,
-        data.project,
-        data.timestamp,
-        data.status,
-    ));
+    if (Array.isArray(data)) {
+        return data.map(d => new Invitation(
+            d.id,
+            d.from_user,
+            d.to_user,
+            d.project,
+            d.timestamp,
+            d.status
+        ));
+    } else {
+        return new Invitation(
+            data.id,
+            data.from_user,
+            data.to_user,
+            data.project,
+            data.timestamp,
+            data.status
+        );
+    }
 }
+

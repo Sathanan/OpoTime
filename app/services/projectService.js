@@ -1,6 +1,6 @@
-import Project from "./models/project";
-import { ShowError } from "./utilis/utillity";
-import { makeApiCall } from "./utilis/basefunctions";
+import Project from "../api/models/project";
+import { ShowError } from "../api/utilis/utillity";
+import { makeApiCall } from "../api/utilis/basefunctions";
 
 /**
  * Holt alle Projekte gefiltert nach Projekt-ID oder Projektname.

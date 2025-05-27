@@ -1,7 +1,7 @@
-import Task from "./models/task";
-import { makeApiCall } from "./utilis/basefunctions";
-import { ShowError } from "./utilis/utillity";
-import { getCookies } from "./utilis/cookieManager";
+import Task from "../api/models/task";
+import { makeApiCall } from "../api/utilis/basefunctions";
+import { ShowError } from "../api/utilis/utillity";
+import { getCookies } from "../api/utilis/cookieManager";
 
 /**
  * Holt alle Aufgaben (sofern vom Backend erlaubt).
@@ -182,14 +182,28 @@ export async function deleteTask(taskID) {
  * @returns {Task[]} Liste von Task-Modellen.
  */
 function convertJsonToModel(data) {
-    return data.map(data => new Task(
-        data.id,
-        data.project,
-        data.assigned_to,
-        data.text,
-        data.status,
-        data.priority,
-        data.due_date,
-        data.progress,
-    ));
+    if (Array.isArray(data)) {
+        return data.map(d => new Task(
+            d.id,
+            d.project,
+            d.assigned_to,
+            d.text,
+            d.status,
+            d.priority,
+            d.due_date,
+            d.progress
+        ));
+    } else {
+        return new Task(
+            data.id,
+            data.project,
+            data.assigned_to,
+            data.text,
+            data.status,
+            data.priority,
+            data.due_date,
+            data.progress
+        );
+    }
 }
+

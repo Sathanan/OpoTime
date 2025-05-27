@@ -1,6 +1,6 @@
-import UserInformation from "./models/userInformation";
-import { ShowError } from "./utilis/utillity";
-import { makeApiCall } from "./utilis/basefunctions";
+import UserInformation from "../api/models/userInformation";
+import { ShowError } from "../api/utilis/utillity";
+import { makeApiCall } from "../api/utilis/basefunctions";
 
 /**
  * Holt die Benutzerinformationen des aktuell eingeloggten Users.
@@ -54,18 +54,36 @@ export async function updateUserInformation(model_attribut, value) {
  * @returns {UserInformation[]} Liste mit UserInformation-Instanzen.
  */
 function convertJsonToModel(data) {
-    return data.map(data => new UserInformation(
-        data.id,
-        data.first_name,
-        data.last_name,
-        data.email,
-        data.phone,
-        data.job,
-        data.location,
-        data.user_timezone,
-        data.languages,
-        data.bio,
-        data.joined_at,
-        data.profile_picture,
-    ));
+    if (Array.isArray(data)) {
+        return data.map(d => new UserInformation(
+            d.id,
+            d.first_name,
+            d.last_name,
+            d.email,
+            d.phone,
+            d.job,
+            d.location,
+            d.user_timezone,
+            d.languages,
+            d.bio,
+            d.joined_at,
+            d.profile_picture
+        ));
+    } else {
+        return new UserInformation(
+            data.id,
+            data.first_name,
+            data.last_name,
+            data.email,
+            data.phone,
+            data.job,
+            data.location,
+            data.user_timezone,
+            data.languages,
+            data.bio,
+            data.joined_at,
+            data.profile_picture
+        );
+    }
 }
+

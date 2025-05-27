@@ -22,12 +22,15 @@ import {
   X
 } from 'lucide-react';
 import styles from './css/projects.module.css';
-import { getAllProjects } from '../api/projectService';
+import { getAllProjects } from '../services/projectService';
+import { getInvitedUserByProjectID } from '../api/utilis/user';
 import AddProjectModal from './addProjectModal';
 import Project from '../api/models/project';
 import { getCookies } from '../api/utilis/cookieManager';
-import { createProject, updateProjectStatus } from '../api/projectService';
+import { createProject, updateProjectStatus } from '../services/projectService';
 import { getUserByID } from '../api/utilis/user';
+import { getAllUsers } from '../api/utilis/user';
+import { createInvitation } from '../services/invitationService';
 
 const ProjectsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,45 +40,44 @@ const ProjectsPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [projects, setProjects] = useState([]);
-  
+
   // User Management States
   const [availableUsers, setAvailableUsers] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [projectUsers, setProjectUsers] = useState([]);
 
-  // Mock data for available users - replace with actual API call
-  const mockUsers = [
-    { id: 1, name: 'Max Mustermann', email: 'max@example.com', avatar: 'MM' },
-    { id: 2, name: 'Anna Schmidt', email: 'anna@example.com', avatar: 'AS' },
-    { id: 3, name: 'Tom Weber', email: 'tom@example.com', avatar: 'TW' },
-    { id: 4, name: 'Lisa Müller', email: 'lisa@example.com', avatar: 'LM' },
-    { id: 5, name: 'Jonas Klein', email: 'jonas@example.com', avatar: 'JK' }
-  ];
-
-  useEffect(() => {
-    async function fetchProjects() {
+  async function fetchData() {
       try {
         const result = await getAllProjects();
         setProjects(result || []);
+
+        const users = await getAllUsers();
+        setAvailableUsers(users);
       } catch (err) {
-        console.error("Projekte konnten nicht geladen werden:", err);
+        console.error("Fehler beim Laden:", err);
       }
     }
 
-    fetchProjects();
-    setAvailableUsers(mockUsers); // Replace with actual API call
+  useEffect(() => {
+    fetchData();
   }, []);
 
+
   useEffect(() => {
-    if (selectedProject) {
-      // Mock project users - replace with actual project users from API
-      const mockProjectUsers = [
-        { id: 1, name: 'Max Mustermann', email: 'max@example.com', avatar: 'MM', role: 'Owner' },
-        { id: 2, name: 'Anna Schmidt', email: 'anna@example.com', avatar: 'AS', role: 'Developer' }
-      ];
-      setProjectUsers(mockProjectUsers);
+    async function fetchProjectUsers() {
+      if (!selectedProject) return;
+      try {
+        const users = await getInvitedUserByProjectID(selectedProject.id);
+        console.log(users);
+        setProjectUsers(users);
+      } catch (err) {
+        console.error("Fehler beim Laden der Projektbenutzer:", err);
+      }
     }
+
+    fetchProjectUsers();
   }, [selectedProject]);
+
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -123,7 +125,7 @@ const ProjectsPage = () => {
     ));
 
     try {
-      await updateProjectStatus(projectId, newStatus); 
+      await updateProjectStatus(projectId, newStatus);
     } catch (error) {
       console.error("Timer-Status konnte nicht aktualisiert werden:", error);
     }
@@ -142,12 +144,12 @@ const ProjectsPage = () => {
     const project = new Project(projectData.id, projectData.user, projectData.name, projectData.invited_users, projectData.description, projectData.status, projectData.progress, projectData.total_time, projectData.today_time, projectData.deadline, projectData.color);
     const created = await createProject(project);
     if (created) {
-      await fetchProjects();
+      await fetchData();
     }
   }
 
   // User Management Functions
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!selectedUserId) return;
 
     const userToAdd = availableUsers.find(user => user.id === parseInt(selectedUserId));
@@ -158,10 +160,12 @@ const ProjectsPage = () => {
       alert('Benutzer ist bereits im Projekt');
       return;
     }
-
+    //Create Invitation
+    const invitation = await createInvitation(selectedProject.id, selectedUserId);
+    console.log(invitation);
     const newUser = {
       ...userToAdd,
-      role: 'Member'
+      InvitationState: "pending"
     };
 
     setProjectUsers([...projectUsers, newUser]);
@@ -178,7 +182,7 @@ const ProjectsPage = () => {
   };
 
   const getAvailableUsersForDropdown = () => {
-    return availableUsers.filter(user => 
+    return availableUsers.filter(user =>
       !projectUsers.find(projectUser => projectUser.id === user.id)
     );
   };
@@ -406,7 +410,7 @@ const ProjectsPage = () => {
               {/* User Management Section */}
               <div className={styles.userManagementSection}>
                 <h4>Team-Mitglieder verwalten</h4>
-                
+
                 {/* Add User Form */}
                 <div className={styles.addUserForm}>
                   <div className={styles.userDropdownContainer}>
@@ -419,7 +423,7 @@ const ProjectsPage = () => {
                       <option value="">Benutzer auswählen...</option>
                       {getAvailableUsersForDropdown().map(user => (
                         <option key={user.id} value={user.id}>
-                          {user.name} ({user.email})
+                          {user.username} ({user.email})
                         </option>
                       ))}
                     </select>
@@ -439,13 +443,13 @@ const ProjectsPage = () => {
                     <div key={user.id} className={styles.userItem}>
                       <div className={styles.userInfo}>
                         <div className={styles.userAvatar}>
-                          {user.avatar}
+                          {user.email?.substring(0, 2).toUpperCase()}
                         </div>
                         <div className={styles.userDetails}>
                           <span className={styles.userName}>{user.name}</span>
                           <span className={styles.userEmail}>{user.email}</span>
                         </div>
-                        <span className={styles.userRole}>{user.role}</span>
+                        <span className={styles.userRole}>{user.invitation_status}</span>
                       </div>
                       <button
                         className={styles.removeUserButton}
