@@ -9,6 +9,7 @@ import { makeApiCall } from "../api/utilis/basefunctions";
 export async function getUserInformation() {
     try {
         const response = await makeApiCall("info", "GET", null, true);
+        console.log("DEBUG: API-Antwort erhalten:", response);
 
         if (!response.ok) {
             ShowError("UserInformation holen", response);
@@ -16,9 +17,15 @@ export async function getUserInformation() {
         }
 
         const userInformationData = await response.json();
-        return convertJsonToModel(userInformationData);
+        console.log("DEBUG: JSON-Antwort nach response.json():", userInformationData);
+
+        const converted = convertJsonToModel(userInformationData);
+        console.log("DEBUG: Ergebnis von convertJsonToModel():", converted);
+
+        return converted;
     } catch (err) {
         ShowError("UserInformation holen", err);
+        console.error("DEBUG: Fehler beim getUserInformation:", err);
         return;
     }
 }
@@ -32,7 +39,10 @@ export async function getUserInformation() {
 export async function updateUserInformation(model_attribut, value) {
     try {
         const body = JSON.stringify({ [model_attribut]: value });
+        console.log(`DEBUG: PATCH-Anfrage mit body: ${body}`);
+
         const response = await makeApiCall("info", "PATCH", body, true);
+        console.log("DEBUG: PATCH-Antwort erhalten:", response);
 
         if (!response.ok) {
             ShowError("UserInformation aktualisieren", response);
@@ -40,50 +50,30 @@ export async function updateUserInformation(model_attribut, value) {
         }
 
         const userInformationData = await response.json();
-        return convertJsonToModel(userInformationData);
+        console.log("DEBUG: JSON nach PATCH:", userInformationData);
+
+        const converted = convertJsonToModel(userInformationData);
+        console.log("DEBUG: Ergebnis von convertJsonToModel() nach PATCH:", converted);
+
+        return converted;
     } catch (err) {
         ShowError("UserInformation aktualisieren", err);
+        console.error("DEBUG: Fehler beim updateUserInformation:", err);
         return;
     }
 }
 
-
 /**
  * Wandelt die JSON-Antwort der API in UserInformation-Objekte um.
- * @param {Object[]} data - Das JSON-Array aus der API-Antwort.
- * @returns {UserInformation[]} Liste mit UserInformation-Instanzen.
+ * @param {Object|Object[]} data - Das JSON-Objekt oder Array aus der API-Antwort.
+ * @returns {UserInformation|UserInformation[]} Instanz oder Array von UserInformation-Objekten.
  */
 function convertJsonToModel(data) {
+    console.log("DEBUG: convertJsonToModel() aufgerufen mit:", data);
+
     if (Array.isArray(data)) {
-        return data.map(d => new UserInformation(
-            d.id,
-            d.first_name,
-            d.last_name,
-            d.email,
-            d.phone,
-            d.job,
-            d.location,
-            d.user_timezone,
-            d.languages,
-            d.bio,
-            d.joined_at,
-            d.profile_picture
-        ));
+        return data.map(d => new UserInformation(d));
     } else {
-        return new UserInformation(
-            data.id,
-            data.first_name,
-            data.last_name,
-            data.email,
-            data.phone,
-            data.job,
-            data.location,
-            data.user_timezone,
-            data.languages,
-            data.bio,
-            data.joined_at,
-            data.profile_picture
-        );
+        return new UserInformation(data);
     }
 }
-

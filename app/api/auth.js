@@ -1,6 +1,5 @@
 import { setCookies, removeCookies } from "./utilis/cookieManager";
 import { makeApiCall } from "./utilis/basefunctions";
-import { useRouter } from 'next/navigation';
 import { ShowError } from "./utilis/utillity";
 
 export async function login(name, password) {
