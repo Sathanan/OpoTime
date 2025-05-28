@@ -29,6 +29,10 @@ const Profile = () => {
   const [error, setError] = useState(null);
 
   const [profileData, setProfileData] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [imageUrl, setImageUrl] = useState(profileData?.avatar || null);
+
 
   useEffect(() => {
     async function fetchData() {
@@ -54,7 +58,7 @@ const Profile = () => {
           location: user.location || '',
           joined: user.joined_at || '',
           bio: user.bio || '',
-          avatar: user.profile_picture || '/api/placeholder/150/150',
+          avatar: user.profile_picture || '/default-avatar.png',
           timezone: user.user_timezone || '',
           language: Array.isArray(user.languages) ? user.languages[0] : user.languages || 'English',
           notifications: true,
@@ -79,30 +83,93 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
-  if (!profileData) return;
+    if (!profileData) return;
 
-  const updates = [
-    ['first_name', profileData.name.split(' ')[0]],
-    ['last_name', profileData.name.split(' ')[1] || ''],
-    ['email', profileData.email],
-    ['phone', profileData.phone],
-    ['location', profileData.location],
-    ['user_timezone', profileData.timezone],
-    ['languages', profileData.language], // Hier: String statt Array
-    ['bio', profileData.bio]
-  ];
+    const updates = [
+      ['first_name', profileData.name.split(' ')[0]],
+      ['last_name', profileData.name.split(' ')[1] || ''],
+      ['email', profileData.email],
+      ['phone', profileData.phone],
+      ['location', profileData.location],
+      ['user_timezone', profileData.timezone],
+      ['languages', profileData.language], // String statt Array
+      ['bio', profileData.bio]
+    ];
 
-  for (let [key, value] of updates) {
-    await updateUserInformation(key, value);
-  }
+    for (let [key, value] of updates) {
+      await updateUserInformation(key, value);
+    }
 
-  setIsEditing(false);
-};
-
+    setIsEditing(false);
+  };
 
   const handleCancel = () => {
     setIsEditing(false);
   };
+
+  // Neuer Handler für Profilbild-Upload
+const handleFileChange = async (event) => {
+  setError(null);
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    setPreview(reader.result);
+  };
+  reader.readAsDataURL(file);
+
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+
+  setUploading(true);
+
+  try {
+    const res = await fetch('/api/utilis/profile-picture', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageBase64: base64 }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.message || 'Upload fehlgeschlagen');
+      setUploading(false);
+      return;
+    }
+
+    const uploadedUrl = data.imageUrl;
+    setImageUrl(uploadedUrl);
+
+    // Update im Profil speichern:
+    await fetch('/api/profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ profile_picture: uploadedUrl }),
+    });
+
+    // Lokales Profil aktualisieren:
+    setProfileData(prev => ({
+      ...prev,
+      avatar: uploadedUrl,
+    }));
+
+    setUploading(false);
+  } catch (err) {
+    setError('Upload fehlgeschlagen');
+    setUploading(false);
+  }
+};
+
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
@@ -127,10 +194,17 @@ const Profile = () => {
           <div className={styles.headerContent}>
             <div className={styles.avatarSection}>
               <div className={styles.avatarWrapper}>
-                <img src={profileData.avatar} alt="" className={styles.avatar} />
-                <button className={styles.avatarEdit} title="Change photo">
+                <img src={preview || profileData.avatar} alt="" className={styles.avatar} />
+                <label className={styles.avatarEdit} title="Change photo" htmlFor="avatarUpload">
                   <Camera size={16} />
-                </button>
+                </label>
+                <input
+                  id="avatarUpload"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleFileChange}
+                />
               </div>
               <div className={styles.userInfo}>
                 <h1 className={styles.userName}>{profileData.name || "Nutzer"}</h1>
