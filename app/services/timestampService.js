@@ -3,6 +3,8 @@ import { ShowError } from "../api/utilis/utillity";
 import { makeApiCall } from "../api/utilis/basefunctions";
 import { getCookies } from "../api/utilis/cookieManager";
 import { convertJsonToTimestamp } from "../api/models/timestamp";
+import { logData, logResponse, logBody, logParam } from "../utillity/logger";
+
 
 /**
  * Holt alle Zeitstempel eines Benutzers seit einem bestimmten Zeitpunkt.
@@ -11,20 +13,24 @@ import { convertJsonToTimestamp } from "../api/models/timestamp";
  */
 export async function getTimestampsByUser(since) {
     const [accessToken, refreshToken, userID] = getCookies();
-    const params = `?since=${since}&user_id=${userID}`;
+    const param = `?since=${since}&user_id=${userID}`;
+    logParam("getTimestampsByUser", param);
 
     try {
         const response = await makeApiCall("time-entries", "GET", null, true, params);
+        logResponse("getTimestampsByUser", response);
 
         if (!response.ok) {
-            ShowError("Timestamps holen by User", response);
+            ShowError("getTimestampsByUser", response);
             return;
         }
 
-        const timestampData = await response.json();
-        return convertJsonToTimestamp(timestampData);
+        const data = await response.json();
+        logData("getTimestampsByUser", data);
+
+        return convertJsonToTimestamp(data);
     } catch (err) {
-        ShowError("Timestamps holen by User", err);
+        ShowError("getTimestampsByUser", err);
         return;
     }
 }
@@ -36,20 +42,24 @@ export async function getTimestampsByUser(since) {
  * @returns {Promise<Timestamp[]>} Liste von Timestamp-Modellen.
  */
 export async function getTimestampsByProject(since, projectId) {
-    const params = `?since=${since}&project_id=${projectId}`;
+    const param = `?since=${since}&project_id=${projectId}`;
+    logParam("getTimestampsByProject", param);
 
     try {
         const response = await makeApiCall("time-entries", "GET", null, true, params);
+        logResponse("getTimestampsByProject", response);
 
         if (!response.ok) {
-            ShowError("Timestamps holen by Project", response);
+            ShowError("getTimestampsByProject", response);
             return;
         }
 
-        const timestampData = await response.json();
-        return convertJsonToTimestamp(timestampData);
+        const data = await response.json();
+        logData("getTimestampsByProject", data);
+
+        return convertJsonToTimestamp(data);
     } catch (err) {
-        ShowError("Timestamps holen by Project", err);
+        ShowError("getTimestampsByProject", err);
         return;
     }
 }
@@ -63,17 +73,22 @@ export async function getTimestampsByProject(since, projectId) {
 export async function createTimestamp(projectID, type) {
     try {
         const body = JSON.stringify({ projectID, type });
+        logBody("createTimestamp", body);
+
         const response = await makeApiCall("time-entries", "POST", body, true);
+        logResponse("createTimestamp", response);
 
         if (!response.ok) {
-            ShowError("Erstellen von Timestamp", response);
+            ShowError("createTimestamp", response);
             return;
         }
 
-        const timestampData = await response.json();
-        return convertJsonToTimestamp(timestampData);
+        const data = await response.json();
+        logData("createTimestamp", data);
+
+        return convertJsonToTimestamp(data);
     } catch (err) {
-        ShowError("Erstellen von Timestamp", err);
+        ShowError("createTimestamp", err);
         return;
     }
 }
@@ -90,17 +105,22 @@ export async function updateTimestamp(entryId, type) {
             entry_id: entryId,
             type,
         });
+        logBody("updateTimestamp", body);
+
         const response = await makeApiCall("time-entries", "PATCH", body, true);
+        logResponse("updateTimestamp", response);
 
         if (!response.ok) {
-            ShowError("Aktualisierung eines Timestamps", response);
+            ShowError("updateTimestamp", response);
             return;
         }
 
-        const timestampData = await response.json();
-        return convertJsonToTimestamp(timestampData);
+        const data = await response.json();
+        logData("updateTimestamp", data);
+
+        return convertJsonToTimestamp(data);
     } catch (err) {
-        ShowError("Aktualisierung eines Timestamps", err);
+        ShowError("updateTimestamp", err);
         return;
     }
 }
@@ -113,16 +133,17 @@ export async function updateTimestamp(entryId, type) {
 export async function deleteTimestamp(entryId) {
     try {
         const response = await makeApiCall("time-entries", "DELETE", null, true, `?entry_id=${entryId}`);
+        logResponse("deleteTimestamp", response);
 
         if (!response.ok) {
-            ShowError("Löschen von Timestamp", response);
-            return;
+            ShowError("deleteTimestamp", response);
+            return false;
         }
 
-        return { message: 'Timestamp erfolgreich gelöscht' };
+        return true;
     } catch (err) {
-        ShowError("Löschen von Timestamp", err);
-        return;
+        ShowError("deleteTimestamp", err);
+        return false;
     }
 }
 

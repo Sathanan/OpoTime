@@ -1,25 +1,32 @@
 import { makeApiCall } from "../api/utilis/basefunctions";
 import { ShowError } from "../api/utilis/utillity";
 import { convertJsonToUserImage } from "../api/models/userimage";
+import { logData, logResponse, logBody, logParam } from "../utillity/logger";
+
 
 const DEFAULT_IMAGE_URL = "/default-avatar.png";
 
 export async function getUserImage(type) {
     try {
-        const param = `?type=${type}`
+        const param = `?type=${type}`;
+        logParam("getUserImage", param);
+        
         const response = await makeApiCall("userImage", "GET", null, true, param)
+        logResponse("getUserImage", response);
+        
         if (!response.ok) {
             if (response.status === 404) {
                 return { imageUrl: DEFAULT_IMAGE_URL };
             }
-            ShowError(`Holen der Bilder vom Benutzer des Types ${type}`, response);
+            ShowError(`getUserImage`, response);
             return;
         }
         const data = await response.json();
-        const convertedData = convertJsonToUserImage(data)
-        return convertedData;
+        logData("getUserImage", data);
+        
+        return convertJsonToUserImage(data);
     } catch (err) {
-        ShowError(`Holen der Bilder vom Benutzer des Types ${type}`, err);
+        ShowError(`getUserImage`, err);
         return;
     }
 }
@@ -36,14 +43,18 @@ export async function uploadUserImage(file, type) {
         formData.append('type', type);
 
         const response = await makeApiCall("userImage", "POST", formData, true);
+        logResponse("uploadUserImage", response);
+        
         if (!response.ok) {
-            ShowError(`Upload des ${type}-Bildes`, response);
+            ShowError(`uploadUserImage`, response);
             return;
         }
         const data = await response.json();
+        logData("getIuploadUserImagenvitationByProject", data);
+        
         return convertJsonToUserImage(data);
     } catch (err) {
-        ShowError(`Upload des ${type}-Bildes`, err);
+        ShowError(`uploadUserImage`, err);
         return;
     }
 }
@@ -51,14 +62,18 @@ export async function uploadUserImage(file, type) {
 export async function deleteUserImage(imageId) {
     try {
         const param = `?image_id=${imageId}`;
+        logParam("deleteUserImage", param);
+        
         const response = await makeApiCall("userImage", "DELETE", null, true, param);
+        logResponse("deleteUserImage", response);
+        
         if (!response.ok && response.status !== 404) {
-            ShowError("Löschen des Bildes", response);
+            ShowError("deleteUserImage", response);
             return false;
         }
         return true;
     } catch (err) {
-        ShowError("Löschen des Bildes", err);
+        ShowError("deleteUserImage", err);
         return false;
     }
 }
@@ -66,14 +81,21 @@ export async function deleteUserImage(imageId) {
 export async function updateUserImageType(imageId, newType) {
     try {
         const body = JSON.stringify({ image_id: imageId, type: newType });
+        logBody("updateUserImageType", body);
+        
         const response = await makeApiCall("userImage", "PATCH", body, true);
+        logResponse("updateUserImageType", response);
+        
         if (!response.ok) {
-            ShowError("Aktualisieren des Bild-Typs", response);
+            ShowError("updateUserImageType", response);
             return;
         }
-        return await response.json();
+        const data = await response.json();
+        logData("updateUserImageType", data);
+        
+        return convertJsonToUserImage(data);
     } catch (err) {
-        ShowError("Aktualisieren des Bild-Typs", err);
+        ShowError("updateUserImageType", err);
         return;
     }
 }

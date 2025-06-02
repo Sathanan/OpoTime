@@ -2,6 +2,7 @@ import Invitation from "../api/models/invitation";
 import { ShowError } from "../api/utilis/utillity";
 import { makeApiCall } from "../api/utilis/basefunctions";
 import { convertJsonToInvitation } from "../api/models/invitation";
+import { logResponse, logBody, logParam, logData } from "../utillity/logger";
 
 /**
  * Erstellt eine Einladung zu einem Projekt für einen bestimmten Benutzer.
@@ -12,18 +13,18 @@ import { convertJsonToInvitation } from "../api/models/invitation";
 export async function createInvitation(project_ID, toUser_ID) {
     try {
         const body = JSON.stringify({ "project_id": project_ID, "to_user_id": toUser_ID });
-        console.log(body);
-        console.log(project_ID, toUser_ID)
+        logBody("createInvitation", body);
         const response = await makeApiCall("invitations/send", "POST", body, true);
 
         if (!response.ok) {
-            ShowError("Einladung erstellen", response);
+            ShowError("createInvitation", response);
             return;
         }
+        logResponse("createInvitation", response);
        return new Response({"message": "Einladung gesendet"})
 
     } catch (err) {
-        ShowError("Einladung erstellen", err);
+        ShowError("createInvitation", err);
         return;
     }
 }
@@ -37,20 +38,24 @@ export async function createInvitation(project_ID, toUser_ID) {
 export async function updateInvitation(invitationID, status) {
     try {
         const body = JSON.stringify({ "invitation_id": invitationID, "status": status });
+        logBody("updateInvitation", body);
+
         const response = await makeApiCall("invitation", "PATCH", body, true);
+        logResponse("updateInvitation", response);
 
         if (!response.ok) {
-            ShowError("Aktualisieren Einladung", response);
+            ShowError("updateInvitation", response);
             return;
         }
 
-        return { message: "Einladung erfolgreich aktualisiert" };
+        return true;
 
     } catch (err) {
-        ShowError("Aktualisieren Einladung", err);
+        ShowError("updateInvitation", err);
         return;
     }
 }
+
 
 /**
  * Holt alle Einladungen zu einem bestimmten Projekt.
@@ -62,24 +67,23 @@ export async function updateInvitation(invitationID, status) {
 export async function getInvitationByProject(project_ID, accepted_only = false) {
     try {
         const param = `?project_id=${project_ID}&accepted=${accepted_only}`;
+        logParam("getInvitationByProject", param)
         const response = await makeApiCall("invitation", "GET", null, true, param);
+        logResponse("getInvitationByProject", response);
 
         if (!response.ok) {
-            ShowError("Holen der Einladungen", response);
+            ShowError("getInvitationByProject", response);
             return;
         }
 
         const data = await response.json();
+        logData("getInvitationByProject", data);
         return convertJsonToInvitation(data);
 
     } catch (err) {
-        ShowError("Holen der Einladungen", err);
+        ShowError("getInvitationByProject", err);
         return;
     }
-}
-
-export async function getInvitationByid(invitation_id){
-
 }
 
 

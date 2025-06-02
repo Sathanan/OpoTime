@@ -1,6 +1,9 @@
-export async function ShowError(aktion, response) {
-  let message = "Unbekannter Fehler ist aufgetreten";
+import { log } from "../../utillity/logger";
 
+export async function ShowError(methodName, response) {
+  let message = "Unbekannter Fehler ist aufgetreten";
+  let infoText = `${methodName} -> Fehler: `
+  log(infoText, response)
   try {
     if (response && typeof response.json === "function") {
       const errorData = await response.json();
@@ -11,11 +14,11 @@ export async function ShowError(aktion, response) {
       message = response;
     }
   } catch (err) {
-    console.error("Fehler beim Auslesen von JSON:", err);
+    console.error(infoText, err);
   }
 
-  console.error(`${aktion} fehlgeschlagen:`, response);
-  alert(`${aktion} fehlgeschlagen: ${message}`);
+  console.error(`${infoText}`, response);
+  alert(`${infoText} ${message}`);
 }
 
 

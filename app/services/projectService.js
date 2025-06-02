@@ -2,6 +2,7 @@ import Project from "../api/models/project";
 import { ShowError } from "../api/utilis/utillity";
 import { makeApiCall } from "../api/utilis/basefunctions";
 import { convertJsonToProject } from "../api/models/project";
+import { logData, logResponse, logBody, logParam } from "../utillity/logger";
 
 /**
  * Holt alle Projekte gefiltert nach Projekt-ID oder Projektname.
@@ -19,15 +20,17 @@ export async function getAllProjects(projectId = null, projectName = null) {
         } else {
             response = await makeApiCall("projects", "GET", null, true);
         }
+        logResponse("getAllProjects", response);
         if (!response.ok) {
-            ShowError("Alle Projekte holen", response);
+            ShowError("getAllProjects", response);
             return;
         }
-        const projectsData = await response.json();
-        return convertJsonToProject(projectsData);
+        const data = await response.json();
+        logData("getInvitationByProject", data);
+        return convertJsonToProject(data);
 
     } catch (error) {
-        ShowError("Alle Projekte holen", error);
+        ShowError("getAllProjects", error);
         return;
     }
 }
@@ -40,17 +43,22 @@ export async function getAllProjects(projectId = null, projectName = null) {
 export async function createProject(project) {
     try {
         const body = JSON.stringify(project);
+        logBody("createProject", body);
+
         const response = await makeApiCall("projects", "POST", body, true);
+        logResponse("createProject", response);
 
         if (!response.ok) {
-            ShowError("Projekte erstellen", response);
+            ShowError("createProject", response);
             return;
         }
 
-        const projectsData = await response.json();
+        const data = await response.json();
+        logData("createProject", data);
+
         return convertJsonToProject(projectsData);
     } catch (error) {
-        ShowError("Projekte erstellen", error);
+        ShowError("createProject", error);
         return;
     }
 }
@@ -66,17 +74,22 @@ export async function updateProject(project) {
             ...project,
             project_id: project.id,
         });
+        logBody("updateProject", body);
+
         const response = await makeApiCall("projects", "PATCH", body, true);
+        logResponse("updateProject", response);
 
         if (!response.ok) {
-            ShowError("Projekt updaten", response);
+            ShowError("updateProject", response);
             return;
         }
 
-        const projectsData = await response.json();
+        const data = await response.json();
+        logData("updateProject", data);
+
         return convertJsonToProject(projectsData);
     } catch (error) {
-        ShowError("Projekt updaten", error);
+        ShowError("updateProject", error);
         return;
     }
 }
@@ -89,16 +102,19 @@ export async function updateProject(project) {
 export async function deleteProject(projectId) {
     try {
         const body = JSON.stringify({ project_id: projectId });
+        logBody("deleteProject", body);
+
         const response = await makeApiCall("projects", "DELETE", body, true);
+        logResponse("deleteProject", response);
 
         if (!response.ok) {
-            ShowError("Projekt löschen", response);
+            ShowError("deleteProject", response);
             return;
         }
 
-        return { message: 'Projekt erfolgreich gelöscht' };
+        return true;
     } catch (error) {
-        ShowError("Projekt löschen", error);
+        ShowError("deleteProject", error);
         return;
     }
 }

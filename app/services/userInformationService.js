@@ -2,6 +2,8 @@ import UserInformation from "../api/models/userInformation";
 import { ShowError } from "../api/utilis/utillity";
 import { makeApiCall } from "../api/utilis/basefunctions";
 import { convertJsonToUserInformation } from "../api/models/userInformation";
+import { logData, logResponse, logBody, logParam } from "../utillity/logger";
+
 
 /**
  * Holt die Benutzerinformationen des aktuell eingeloggten Users.
@@ -10,23 +12,19 @@ import { convertJsonToUserInformation } from "../api/models/userInformation";
 export async function getUserInformation() {
     try {
         const response = await makeApiCall("info", "GET", null, true);
-        console.log("DEBUG: API-Antwort erhalten:", response);
+       logResponse("getUserInformation", response);
 
         if (!response.ok) {
-            ShowError("UserInformation holen", response);
+            ShowError("getUserInformation", response);
             return;
         }
 
-        const userInformationData = await response.json();
-        console.log("DEBUG: JSON-Antwort nach response.json():", userInformationData);
+        const data = await response.json();
+        logData("getUserInformation", data);
 
-        const converted = convertJsonToUserInformation(userInformationData);
-        console.log("DEBUG: Ergebnis von convertJsonToModel():", converted);
-
-        return converted;
+        return convertJsonToUserInformation(data);
     } catch (err) {
-        ShowError("UserInformation holen", err);
-        console.error("DEBUG: Fehler beim getUserInformation:", err);
+        ShowError("getUserInformation", err);
         return;
     }
 }
@@ -40,22 +38,22 @@ export async function getUserInformation() {
 export async function updateUserInformation(model_attribut, value) {
     try {
         const body = JSON.stringify({ [model_attribut]: value });
+        logBody("updateUserInformation", body);
 
         const response = await makeApiCall("info", "PATCH", body, true);
+        logResponse("updateUserInformation", response);
 
         if (!response.ok) {
-            ShowError("UserInformation aktualisieren", response);
+            ShowError("updateUserInformation", response);
             return;
         }
 
-        const userInformationData = await response.json();
+        const data = await response.json();
+        logData("updateUserInformation", data);
 
-        const converted = convertJsonToUserInformation(userInformationData);
-
-        return converted;
+        return convertJsonToUserInformation(data);
     } catch (err) {
-        ShowError("UserInformation aktualisieren", err);
-        console.error("DEBUG: Fehler beim updateUserInformation:", err);
+        ShowError("updateUserInformation", err);
         return;
     }
 }
