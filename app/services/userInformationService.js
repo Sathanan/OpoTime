@@ -39,10 +39,8 @@ export async function getUserInformation() {
 export async function updateUserInformation(model_attribut, value) {
     try {
         const body = JSON.stringify({ [model_attribut]: value });
-        console.log(`DEBUG: PATCH-Anfrage mit body: ${body}`);
 
         const response = await makeApiCall("info", "PATCH", body, true);
-        console.log("DEBUG: PATCH-Antwort erhalten:", response);
 
         if (!response.ok) {
             ShowError("UserInformation aktualisieren", response);
@@ -50,10 +48,8 @@ export async function updateUserInformation(model_attribut, value) {
         }
 
         const userInformationData = await response.json();
-        console.log("DEBUG: JSON nach PATCH:", userInformationData);
 
         const converted = convertJsonToModel(userInformationData);
-        console.log("DEBUG: Ergebnis von convertJsonToModel() nach PATCH:", converted);
 
         return converted;
     } catch (err) {

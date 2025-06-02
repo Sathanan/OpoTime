@@ -3,21 +3,27 @@ import { getCookies, setCookies } from "./cookieManager";
 import { logout } from "../auth";
 
 export async function makeApiCall(additionalURL, method, requestBody = null, needToken = false, parameter = null) {
-    let token = "";
-    if (needToken) {
-        token = await getAccessToken();
-    }
-    const response = await fetch(`${BASE_URL}/${additionalURL}/${parameter ? parameter : ""}`, {
-        method,
-        headers: {
-            "Content-Type": "application/json",
-            ...(needToken && { Authorization: `Bearer ${token}` }),
-        },
-        body: requestBody ? requestBody : null,
-    });
+  let token = "";
+  if (needToken) {
+    token = await getAccessToken();
+  }
 
-    return response;
+  const isFormData = requestBody instanceof FormData;
+
+  const headers = {
+    ...(needToken && { Authorization: `Bearer ${token}` }),
+    ...(!isFormData && { "Content-Type": "application/json" })
+  };
+
+  const response = await fetch(`${BASE_URL}/${additionalURL}/${parameter ?? ""}`, {
+    method,
+    headers,
+    body: requestBody ? requestBody : null,
+  });
+
+  return response;
 }
+
 
 export async function getAccessToken() {
     let [accessToken, refreshToken, userID] = getCookies();

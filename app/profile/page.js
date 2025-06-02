@@ -21,6 +21,7 @@ import {
 import styles from './profile.module.css';
 
 import { getUserInformation, updateUserInformation } from '../services/userInformationService'; 
+import { getUserImage, uploadUserImage } from '../services/userImageService';
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -42,6 +43,8 @@ const Profile = () => {
         const data = await getUserInformation();
         console.log("DEBUG: Daten im Profile-Component erhalten:", data);
 
+        const userImage = await getUserImage("profile");
+
         if (!data) {
           setError("Keine Profildaten erhalten.");
           setProfileData(null);
@@ -58,7 +61,7 @@ const Profile = () => {
           location: user.location || '',
           joined: user.joined_at || '',
           bio: user.bio || '',
-          avatar: user.profile_picture || '/default-avatar.png',
+          avatar: userImage.imageUrl || '/default-avatar.png',
           timezone: user.user_timezone || '',
           language: Array.isArray(user.languages) ? user.languages[0] : user.languages || 'English',
           notifications: true,
@@ -93,12 +96,13 @@ const Profile = () => {
       ['location', profileData.location],
       ['user_timezone', profileData.timezone],
       ['languages', profileData.language], // String statt Array
-      ['bio', profileData.bio]
+      ['bio', profileData.bio],
     ];
 
     for (let [key, value] of updates) {
       await updateUserInformation(key, value);
     }
+    await uploadUserImage(profileData.avatar, "profile");
 
     setIsEditing(false);
   };
@@ -107,65 +111,25 @@ const Profile = () => {
     setIsEditing(false);
   };
 
-  // Neuer Handler für Profilbild-Upload
 const handleFileChange = async (event) => {
   setError(null);
   const file = event.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    setPreview(reader.result);
-  };
-  reader.readAsDataURL(file);
-
-  const base64 = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
-
+  const previewUrl = URL.createObjectURL(file);
+  setPreview(previewUrl);
   setUploading(true);
 
   try {
-    const res = await fetch('/api/utilis/profile-picture', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ imageBase64: base64 }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.message || 'Upload fehlgeschlagen');
-      setUploading(false);
-      return;
-    }
-
-    const uploadedUrl = data.imageUrl;
-    setImageUrl(uploadedUrl);
-
-    // Update im Profil speichern:
-    await fetch('/api/profile', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ profile_picture: uploadedUrl }),
-    });
-
-    // Lokales Profil aktualisieren:
+    const userinfo = await uploadUserImage(file, "profile");
+    setImageUrl(userinfo.profile_picture);
     setProfileData(prev => ({
       ...prev,
-      avatar: uploadedUrl,
+      avatar: userinfo.profile_picture
     }));
-
-    setUploading(false);
   } catch (err) {
     setError('Upload fehlgeschlagen');
+  } finally {
     setUploading(false);
   }
 };
