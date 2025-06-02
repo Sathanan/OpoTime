@@ -10,3 +10,7 @@ class Invitation {
 }
 
 export default Invitation;
+
+export function convertJsonToInvitation(json) {
+  return new Invitation(json);
+}

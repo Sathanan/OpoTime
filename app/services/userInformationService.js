@@ -1,6 +1,7 @@
 import UserInformation from "../api/models/userInformation";
 import { ShowError } from "../api/utilis/utillity";
 import { makeApiCall } from "../api/utilis/basefunctions";
+import { convertJsonToUserInformation } from "../api/models/userInformation";
 
 /**
  * Holt die Benutzerinformationen des aktuell eingeloggten Users.
@@ -19,7 +20,7 @@ export async function getUserInformation() {
         const userInformationData = await response.json();
         console.log("DEBUG: JSON-Antwort nach response.json():", userInformationData);
 
-        const converted = convertJsonToModel(userInformationData);
+        const converted = convertJsonToUserInformation(userInformationData);
         console.log("DEBUG: Ergebnis von convertJsonToModel():", converted);
 
         return converted;
@@ -49,7 +50,7 @@ export async function updateUserInformation(model_attribut, value) {
 
         const userInformationData = await response.json();
 
-        const converted = convertJsonToModel(userInformationData);
+        const converted = convertJsonToUserInformation(userInformationData);
 
         return converted;
     } catch (err) {
@@ -59,17 +60,3 @@ export async function updateUserInformation(model_attribut, value) {
     }
 }
 
-/**
- * Wandelt die JSON-Antwort der API in UserInformation-Objekte um.
- * @param {Object|Object[]} data - Das JSON-Objekt oder Array aus der API-Antwort.
- * @returns {UserInformation|UserInformation[]} Instanz oder Array von UserInformation-Objekten.
- */
-function convertJsonToModel(data) {
-    console.log("DEBUG: convertJsonToModel() aufgerufen mit:", data);
-
-    if (Array.isArray(data)) {
-        return data.map(d => new UserInformation(d));
-    } else {
-        return new UserInformation(data);
-    }
-}

@@ -9,3 +9,7 @@ class Timestamp {
 }
 
 export default Timestamp;
+
+export function convertJsonToTimestamp(json) {
+  return new Timestamp(json);
+}

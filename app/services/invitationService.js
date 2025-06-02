@@ -1,6 +1,7 @@
 import Invitation from "../api/models/invitation";
 import { ShowError } from "../api/utilis/utillity";
 import { makeApiCall } from "../api/utilis/basefunctions";
+import { convertJsonToInvitation } from "../api/models/invitation";
 
 /**
  * Erstellt eine Einladung zu einem Projekt für einen bestimmten Benutzer.
@@ -69,7 +70,7 @@ export async function getInvitationByProject(project_ID, accepted_only = false) 
         }
 
         const data = await response.json();
-        return convertJsonToModel(data);
+        return convertJsonToInvitation(data);
 
     } catch (err) {
         ShowError("Holen der Einladungen", err);
@@ -81,30 +82,4 @@ export async function getInvitationByid(invitation_id){
 
 }
 
-/**
- * Konvertiert die rohen JSON-Daten in eine Liste von Invitation-Modellen.
- * @param {Array<Object>} data - Array von JSON-Einladungsdaten.
- * @returns {Invitation[]} - Liste von Invitation-Objekten.
- */
-function convertJsonToModel(data) {
-    if (Array.isArray(data)) {
-        return data.map(d => new Invitation(
-            d.id,
-            d.from_user,
-            d.to_user,
-            d.project,
-            d.timestamp,
-            d.status
-        ));
-    } else {
-        return new Invitation(
-            data.id,
-            data.from_user,
-            data.to_user,
-            data.project,
-            data.timestamp,
-            data.status
-        );
-    }
-}
 

@@ -2,6 +2,7 @@ import Timestamp from "../api/models/timestamp";
 import { ShowError } from "../api/utilis/utillity";
 import { makeApiCall } from "../api/utilis/basefunctions";
 import { getCookies } from "../api/utilis/cookieManager";
+import { convertJsonToTimestamp } from "../api/models/timestamp";
 
 /**
  * Holt alle Zeitstempel eines Benutzers seit einem bestimmten Zeitpunkt.
@@ -21,7 +22,7 @@ export async function getTimestampsByUser(since) {
         }
 
         const timestampData = await response.json();
-        return convertJsonToModel(timestampData);
+        return convertJsonToTimestamp(timestampData);
     } catch (err) {
         ShowError("Timestamps holen by User", err);
         return;
@@ -46,7 +47,7 @@ export async function getTimestampsByProject(since, projectId) {
         }
 
         const timestampData = await response.json();
-        return convertJsonToModel(timestampData);
+        return convertJsonToTimestamp(timestampData);
     } catch (err) {
         ShowError("Timestamps holen by Project", err);
         return;
@@ -70,7 +71,7 @@ export async function createTimestamp(projectID, type) {
         }
 
         const timestampData = await response.json();
-        return convertJsonToModel(timestampData);
+        return convertJsonToTimestamp(timestampData);
     } catch (err) {
         ShowError("Erstellen von Timestamp", err);
         return;
@@ -97,7 +98,7 @@ export async function updateTimestamp(entryId, type) {
         }
 
         const timestampData = await response.json();
-        return convertJsonToModel(timestampData);
+        return convertJsonToTimestamp(timestampData);
     } catch (err) {
         ShowError("Aktualisierung eines Timestamps", err);
         return;
@@ -125,28 +126,4 @@ export async function deleteTimestamp(entryId) {
     }
 }
 
-/**
- * Wandelt ein JSON-Array in eine Liste von Timestamp-Objekten um.
- * @param {Array<Object>} data - Die rohen Zeitstempeldaten.
- * @returns {Timestamp[]} Liste von Timestamp-Modellen.
- */
-function convertJsonToModel(data) {
-    if (Array.isArray(data)) {
-        return data.map(d => new Timestamp(
-            d.id,
-            d.user,
-            d.project,
-            d.timestamp,
-            d.type
-        ));
-    } else {
-        return new Timestamp(
-            data.id,
-            data.user,
-            data.project,
-            data.timestamp,
-            data.type
-        );
-    }
-}
 

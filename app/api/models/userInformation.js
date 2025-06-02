@@ -31,3 +31,7 @@ class UserInformation {
 }
 
 export default UserInformation;
+
+export function convertJsonToUserInformation(json) {
+  return new UserInformation(json);
+}

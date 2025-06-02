@@ -32,3 +32,7 @@ class Project {
 
 
 export default Project;
+
+export function convertJsonToProject(json) {
+  return new Project(json);
+}

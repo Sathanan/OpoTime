@@ -12,3 +12,7 @@ class Task {
 }
 
 export default Task;
+
+export function convertJsonToTask(json) {
+  return new Task(json);
+}

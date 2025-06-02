@@ -3,6 +3,7 @@ import Task from "../api/models/task";
 import { makeApiCall } from "../api/utilis/basefunctions";
 import { ShowError } from "../api/utilis/utillity";
 import { getCookies } from "../api/utilis/cookieManager";
+import { convertJsonToTask } from "../api/models/task";
 
 export async function getAllTask() {
     try {
@@ -12,7 +13,7 @@ export async function getAllTask() {
             return;
         }
         const data = await response.json();
-        return convertJsonToModel(data);
+        return convertJsonToTask(data);
     } catch (err) {
         ShowError("Alle Aufgaben holen", err);
         return;
@@ -28,7 +29,7 @@ export async function getAllTaskByProject(projectID) {
             return;
         }
         const data = await response.json();
-        return convertJsonToModel(data);
+        return convertJsonToTask(data);
     } catch (err) {
         ShowError("Alle Aufgaben holen by Projekt", err);
         return;
@@ -44,7 +45,7 @@ export async function getTaskByID(taskID) {
             return;
         }
         const data = await response.json();
-        return convertJsonToModel(data);
+        return convertJsonToTask(data);
     } catch (err) {
         ShowError("Alle Aufgaben holen by ID", err);
         return;
@@ -60,7 +61,7 @@ export async function getTaskByPriority(priority) {
             return;
         }
         const data = await response.json();
-        return convertJsonToModel(data);
+        return convertJsonToTask(data);
     } catch (err) {
         ShowError("Alle Aufgaben holen by priority", err);
         return;
@@ -85,7 +86,7 @@ export async function createTask(projectID, status, text = "", priority = "mediu
             return;
         }
         const data = await response.json();
-        return convertJsonToModel(data);
+        return convertJsonToTask(data);
     } catch (err) {
         ShowError("Aufgabe erstellen", err);
         return;
@@ -129,31 +130,5 @@ export async function deleteTask(taskID) {
     } catch (err) {
         ShowError("Aufgabe löschen", err);
         return;
-    }
-}
-
-function convertJsonToModel(data) {
-    if (Array.isArray(data)) {
-        return data.map(d => new Task(
-            d.id,
-            d.project,
-            d.assigned_to,
-            d.text,
-            d.status,
-            d.priority,
-            d.due_date,
-            d.progress
-        ));
-    } else {
-        return new Task(
-            data.id,
-            data.project,
-            data.assigned_to,
-            data.text,
-            data.status,
-            data.priority,
-            data.due_date,
-            data.progress
-        );
     }
 }

@@ -8,3 +8,7 @@ class UserModel {
 }
 
 export default UserModel;
+
+export function convertJsonToUserModel(json) {
+  return new UserModel(json);
+}
