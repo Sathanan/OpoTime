@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   Edit2,
@@ -19,77 +19,72 @@ import {
   AlertCircle,
 } from "lucide-react";
 import styles from "./tasks.module.css";
+import {
+  getAllTask,
+  getAllTaskByProject,
+  getTaskByID,
+  getTaskByPriority,
+  createTask,
+  updateTask,
+  deleteTask as deleteTaskApi,
+} from "../services/taskService.js";
+import { getAllProjects } from "../services/projectService.js";
 
 export default function Tasks() {
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      name: "Complete API integration",
-      project: "Web Development",
-      priority: "high",
-      status: "in-progress",
-      dueDate: "2024-05-25",
-      estimatedTime: 7200, // 2 hours in seconds
-      completed: false,
-    },
-    {
-      id: 2,
-      name: "Design mobile mockups",
-      project: "Mobile App",
-      priority: "medium",
-      status: "todo",
-      dueDate: "2024-05-26",
-      estimatedTime: 5400, // 1.5 hours
-      completed: false,
-    },
-    {
-      id: 3,
-      name: "Code review for login feature",
-      project: "Web Development",
-      priority: "high",
-      status: "completed",
-      dueDate: "2024-05-24",
-      estimatedTime: 3600, // 1 hour
-      completed: true,
-    },
-    {
-      id: 4,
-      name: "User research analysis",
-      project: "Design System",
-      priority: "low",
-      status: "todo",
-      dueDate: "2024-05-28",
-      estimatedTime: 9000, // 2.5 hours
-      completed: false,
-    },
-  ]);
-
+  const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [projects, setProjects] = useState([]); // Changed from ["General"] to empty array
+  const [selectedProject, setSelectedProject] = useState("");
 
   const [newTask, setNewTask] = useState({
     name: "",
-    project: "General",
+    project: "",
     priority: "medium",
+    status: "new",
     dueDate: "",
-    estimatedTime: 3600,
+    estimatedTime: 3600, // 1 hour in seconds
   });
-
-  const projects = [
-    "General",
-    "Web Development",
-    "Mobile App",
-    "Design System",
-    "Marketing",
-  ];
 
   const priorities = [
     { value: "low", label: "Low", color: "#10b981" },
     { value: "medium", label: "Medium", color: "#f59e0b" },
     { value: "high", label: "High", color: "#ef4444" },
   ];
+
+  // Fetch tasks and projects on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch projects first
+        const projectsData = await getAllProjects();
+        if (projectsData) {
+          setProjects(projectsData);
+          
+          // If there are projects, set the first one as selected
+          if (projectsData.length > 0) {
+            setSelectedProject(projectsData[0].id);
+          }
+        }
+
+        // Then fetch tasks
+        const tasksData = await getAllTask();
+        if (tasksData) {
+          setTasks(tasksData);
+        }
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -106,62 +101,84 @@ export default function Tasks() {
 
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
-      task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.project.toLowerCase().includes(searchTerm.toLowerCase());
+      task.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (task.project && 
+       projects.find(p => p.id === task.project)?.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     if (filter === "all") return matchesSearch;
-    if (filter === "completed") return task.completed && matchesSearch;
-    if (filter === "pending") return !task.completed && matchesSearch;
+    if (filter === "completed") return task.status === "completed" && matchesSearch;
+    if (filter === "pending") return task.status !== "completed" && matchesSearch;
     if (filter === "overdue") {
       const today = new Date().toISOString().split("T")[0];
-      return !task.completed && task.dueDate < today && matchesSearch;
+      return task.status !== "completed" && task.due_date && task.due_date < today && matchesSearch;
     }
     return matchesSearch;
   });
 
-  const toggleTaskCompletion = (taskId) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              completed: !task.completed,
-              status: !task.completed ? "completed" : "todo",
-            }
-          : task
-      )
-    );
-  };
-
-  const deleteTask = (taskId) => {
-    setTasks(tasks.filter((task) => task.id !== taskId));
-  };
-
-  const addTask = () => {
-    if (newTask.name.trim()) {
-      const task = {
-        id: Date.now(),
-        ...newTask,
-        status: "todo",
-        completed: false,
-      };
-      setTasks([...tasks, task]);
-      setNewTask({
-        name: "",
-        project: "General",
-        priority: "medium",
-        dueDate: "",
-        estimatedTime: 3600,
-      });
-      setIsAddingTask(false);
+  const toggleTaskCompletion = async (taskId) => {
+    try {
+      const taskToUpdate = tasks.find(task => task.id === taskId);
+      const newStatus = taskToUpdate.status === "completed" ? "todo" : "completed";
+      
+      const result = await updateTask(taskId, newStatus, taskToUpdate.text);
+      if (result) {
+        setTasks(tasks.map(task =>
+          task.id === taskId ? { ...task, status: newStatus } : task
+        ));
+      }
+    } catch (error) {
+      console.error("Error updating task:", error);
     }
   };
+
+  const deleteTask = async (taskId) => {
+    try {
+      const result = await deleteTaskApi(taskId);
+      if (result) {
+        setTasks(tasks.filter(task => task.id !== taskId));
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
+  };
+
+  const addTask = async () => {
+  if (newTask.name.trim()) {
+    try {
+      const createdTask = await createTask(
+        newTask.project || null,
+        newTask.status,
+        newTask.name,
+        newTask.priority,       
+        newTask.dueDate || null,
+        newTask.estimatedTime || 0
+      );
+
+      if (createdTask) {
+        setTasks([...tasks, createdTask]);
+        setNewTask({
+          name: "",
+          project: selectedProject || "",
+          priority: "medium",  
+          status: "new",
+          dueDate: "",
+          estimatedTime: 3600,
+        });
+        setIsAddingTask(false);
+      }
+    } catch (error) {
+      console.error("Fehler beim Erstellen der Aufgabe:", error);
+    }
+  }
+};
+
 
   const cancelAddTask = () => {
     setNewTask({
       name: "",
-      project: "General",
+      project: selectedProject || "", // Reset to selected project or empty
       priority: "medium",
+      status: "new",
       dueDate: "",
       estimatedTime: 3600,
     });
@@ -170,17 +187,27 @@ export default function Tasks() {
 
   const getTaskStats = () => {
     const total = tasks.length;
-    const completed = tasks.filter((t) => t.completed).length;
+    const completed = tasks.filter((t) => t.status === "completed").length;
     const pending = total - completed;
     const overdue = tasks.filter((t) => {
       const today = new Date().toISOString().split("T")[0];
-      return !t.completed && t.dueDate < today;
+      return t.status !== "completed" && t.due_date && t.due_date < today;
     }).length;
 
     return { total, completed, pending, overdue };
   };
 
   const stats = getTaskStats();
+
+  if (isLoading) {
+    return (
+      <div className={styles.tasksCont}>
+        <div className={styles.loadingState}>
+          <p>Loading tasks...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.tasksCont}>
@@ -300,6 +327,8 @@ export default function Tasks() {
                 className={styles.taskInput}
                 autoFocus
               />
+              
+              {/* Improved Project Select */}
               <select
                 value={newTask.project}
                 onChange={(e) =>
@@ -307,9 +336,10 @@ export default function Tasks() {
                 }
                 className={styles.projectSelect}
               >
+                <option value="">Select Project</option>
                 {projects.map((project) => (
-                  <option key={project} value={project}>
-                    {project}
+                  <option key={project.id} value={project.id}>
+                    {project.name}
                   </option>
                 ))}
               </select>
@@ -321,11 +351,21 @@ export default function Tasks() {
                 }
                 className={styles.prioritySelect}
               >
-                {priorities.map((priority) => (
-                  <option key={priority.value} value={priority.value}>
-                    {priority.label}
-                  </option>
-                ))}
+                <option value="low">Niedrig</option>
+                <option value="medium">Mittel</option>
+                <option value="high">Hoch</option>
+              </select>
+
+              <select
+                value={newTask.status}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, status: e.target.value })
+                }
+                className={styles.statusSelect}
+              >
+                <option value="new">To Do</option>
+                <option value="in_progress">In Progress</option>
+                <option value="done">Completed</option>
               </select>
 
               <input
@@ -385,76 +425,88 @@ export default function Tasks() {
                 </p>
               </div>
             ) : (
-              filteredTasks.map((task) => (
-                <div key={task.id} className={styles.taskItem}>
-                  <div className={styles.taskLeft}>
-                    <button
-                      onClick={() => toggleTaskCompletion(task.id)}
-                      className={styles.checkButton}
-                    >
-                      {task.completed ? (
-                        <CheckCircle
-                          size={20}
-                          className={styles.completedCheck}
-                        />
-                      ) : (
-                        <Circle size={20} />
-                      )}
-                    </button>
-
-                    <div className={styles.taskInfo}>
-                      <h4
-                        className={`${styles.taskName} ${
-                          task.completed ? styles.completedTask : ""
-                        }`}
+              filteredTasks.map((task) => {
+                const project = projects.find(p => p.id === task.project);
+                return (
+                  <div key={task.id} className={styles.taskItem}>
+                    <div className={styles.taskLeft}>
+                      <button
+                        onClick={() => toggleTaskCompletion(task.id)}
+                        className={styles.checkButton}
                       >
-                        {task.name}
-                      </h4>
-                      <div className={styles.taskMeta}>
-                        <span className={styles.taskProject}>
-                          {task.project}
-                        </span>
-                        <span
-                          className={styles.taskPriority}
-                          style={{
-                            backgroundColor: getPriorityColor(task.priority),
-                          }}
-                        >
-                          {
-                            priorities.find((p) => p.value === task.priority)
-                              ?.label
-                          }
-                        </span>
-                        <span className={styles.taskTime}>
-                          <Clock size={12} />
-                          {formatTime(task.estimatedTime)}
-                        </span>
-                        {task.dueDate && (
-                          <span className={styles.taskDue}>
-                            <Calendar size={12} />
-                            {new Date(task.dueDate).toLocaleDateString()}
-                          </span>
+                        {task.status === "completed" ? (
+                          <CheckCircle
+                            size={20}
+                            className={styles.completedCheck}
+                          />
+                        ) : (
+                          <Circle size={20} />
                         )}
+                      </button>
+
+                      <div className={styles.taskInfo}>
+                        <h4
+                          className={`${styles.taskName} ${
+                            task.status === "completed" ? styles.completedTask : ""
+                          }`}
+                        >
+                          {task.text}
+                        </h4>
+                        <div className={styles.taskMeta}>
+                          {project && (
+                            <span className={styles.taskProject}>
+                              {project.name}
+                            </span>
+                          )}
+                          {task.priority && (
+                            <span
+                              className={styles.taskPriority}
+                              style={{
+                                backgroundColor: getPriorityColor(task.priority),
+                              }}
+                            >
+                              {
+                                priorities.find((p) => p.value === task.priority)
+                                  ?.label
+                              }
+                            </span>
+                          )}
+                          {task.estimatedTime && (
+                            <span className={styles.taskTime}>
+                              <Clock size={12} />
+                              {formatTime(task.estimatedTime)}
+                            </span>
+                          )}
+                          {task.due_date && (
+                            <span className={styles.taskDue}>
+                              <Calendar size={12} />
+                              {new Date(task.due_date).toLocaleDateString()}
+                            </span>
+                          )}
+                          <span className={styles.taskStatus}>
+                            {task.status.replace("-", " ")}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className={styles.taskActions}>
-                    <button
-                      onClick={() => setEditingTask(task.id)}
-                      className={styles.editButton}
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => deleteTask(task.id)}
-                      className={styles.deleteButton}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className={styles.taskActions}>
+                      <button
+                        onClick={() => setEditingTask(task.id)}
+                        className={styles.editButton}
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => deleteTask(task.id)}
+                        className={styles.deleteButton}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
