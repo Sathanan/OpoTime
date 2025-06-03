@@ -1,6 +1,8 @@
 import { BASE_URL } from "./config";
 import { getCookies, setCookies } from "./cookieManager";
 import { logout } from "../auth";
+import { ShowError } from "./utillity";
+import { logBody, logResponse, log, logParam, logData } from "../../utillity/logger";
 
 export async function makeApiCall(additionalURL, method, requestBody = null, needToken = false, parameter = null) {
   let token = "";
@@ -28,13 +30,21 @@ export async function makeApiCall(additionalURL, method, requestBody = null, nee
 export async function getAccessToken() {
     let [accessToken, refreshToken, userID] = getCookies();
     if (isTokenValid(accessToken)) {
+        log("getAccessToken -> Is Valid", accessToken);
         return accessToken;
     }
     try {
         const body = JSON.stringify({ "refresh": refreshToken });
+        logBody("getAccessToken", body);
         const response = await makeApiCall("refresh", "POST", body, false);
+        logResponse("getAccessToken", response);
+        if (!response.ok) {
+            logout();
+            ShowError("getAccessToken", response);
+            return;
+        }
         const parsedData = await response.json();
-
+        logData("getAccessToken", parsedData);
         accessToken = parsedData["access"];
         refreshToken = parsedData["refresh"];
 
@@ -42,7 +52,7 @@ export async function getAccessToken() {
         return accessToken;
     } catch (err) {
         logout();
-        throw new Error("Session abgelaufen " + err);
+        ShowError("getAccessToken", err);
     }
 }
 
