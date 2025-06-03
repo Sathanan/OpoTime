@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { 
   Clock, 
   Home, 
@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import styles from './css/sidebar.module.css';
 import { logout } from '../api/auth';
+import { useTheme } from '../context/ThemeContext';
+
 interface SidebarProps {
   className?: string;
   onToggle?: (expanded: boolean) => void;
@@ -29,15 +31,11 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [activeItem, setActiveItem] = useState('dashboard');
+  const { isDarkMode, toggleTheme } = useTheme();
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -70,7 +68,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
   ];
 
   const handleItemClick = (item: any) => {
-    setActiveItem(item.id);
     router.push(item.path);
     if (isMobile) {
       setIsExpanded(false);
@@ -83,12 +80,9 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
       setIsExpanded(false);
     }
   };
+
   const toggleSidebar = () => {
     setIsExpanded(!isExpanded);
-  };
-
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
   };
 
   const toggleTimer = () => {
@@ -99,6 +93,11 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
     if (isMobile && isExpanded) {
       setIsExpanded(false);
     }
+  };
+
+  // Funktion zum Bestimmen des aktiven Menüpunkts basierend auf dem aktuellen Pfad
+  const getActiveItem = (path: string) => {
+    return menuItems.find(item => item.path === path)?.id || '';
   };
 
   return (
@@ -159,10 +158,11 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
           <ul className={styles.navList}>
             {menuItems.map((item) => {
               const IconComponent = item.icon;
+              const isActive = pathname === item.path;
               return (
                 <li key={item.id} className={styles.navItem}>
                   <button
-                    className={`${styles.navButton} ${activeItem === item.id ? styles.active : ''}`}
+                    className={`${styles.navButton} ${isActive ? styles.active : ''}`}
                     onClick={() => handleItemClick(item)}
                     title={!isExpanded ? item.label : ''}
                   >
@@ -170,7 +170,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
                       <IconComponent size={20} />
                     </div>
                     <span className={styles.navLabel}>{item.label}</span>
-                    {activeItem === item.id && <div className={styles.activeIndicator}></div>}
+                    {isActive && <div className={styles.activeIndicator}></div>}
                   </button>
                 </li>
               );
@@ -194,13 +194,13 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
           <button
             className={`${styles.controlButton} ${styles.collapse}`}
             onClick={handleLogout}
-            title={isExpanded ? 'Collapse Sidebar' : 'Expand Sidebar'}
+            title="Logout"
           >
             <div className={styles.controlIcon}>
-              {<LogOut size={18} />}
+              <LogOut size={18} />
             </div>
             <span className={styles.controlLabel}>
-              {isExpanded ? 'Logout' : 'Login'}
+              Logout
             </span>
           </button>
           <button

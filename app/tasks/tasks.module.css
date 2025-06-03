@@ -1,9 +1,8 @@
 .tasksCont {
-  max-height: 100vh;
+  height: 100%;
   overflow-y: auto;
   padding-bottom: 20px;
   background: var(--bg-primary);
-  min-height: 100vh;
 }
 
 .tasksContainer {
@@ -13,7 +12,7 @@
   background: var(--bg-primary);
   border-radius: 24px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-  min-height: calc(100vh - 48px);
+  min-height: 100%;
   transition: all 0.3s ease;
 }
 
@@ -564,5 +563,46 @@
   .cancelButton {
     width: 100%;
     justify-content: center;
+  }
+}
+
+.filterControls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.filterSelect {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+  min-width: 150px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filterSelect:hover {
+  border-color: var(--border-hover);
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+@media (max-width: 768px) {
+  .filterControls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .filterSelect {
+    width: 100%;
   }
 }
