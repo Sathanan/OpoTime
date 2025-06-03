@@ -30,9 +30,40 @@ class Project {
   }
 }
 
+export function convertJsonToProject(json) {
+  if (Array.isArray(json)) {
+    return json.map(projectData => new Project(
+      projectData.id,
+      projectData.user,
+      projectData.name,
+      projectData.invited_users,
+      projectData.description,
+      projectData.status,
+      projectData.progress,
+      projectData.total_time,
+      projectData.today_time,
+      projectData.deadline,
+      projectData.color,
+      projectData.tasks,
+      projectData.isTimerRunning
+    ));
+  }
+  
+  return new Project(
+    json.id,
+    json.user,
+    json.name,
+    json.invited_users,
+    json.description,
+    json.status,
+    json.progress,
+    json.total_time,
+    json.today_time,
+    json.deadline,
+    json.color,
+    json.tasks,
+    json.isTimerRunning
+  );
+}
 
 export default Project;
-
-export function convertJsonToProject(json) {
-  return new Project(json);
-}
