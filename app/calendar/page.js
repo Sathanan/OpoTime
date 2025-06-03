@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -16,7 +16,8 @@ import {
   Eye,
   Bell,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  X
 } from 'lucide-react';
 import styles from './calendar.module.css';
 import meetingService from '../services/meetingService';
@@ -32,6 +33,15 @@ const Calendar = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [events, setEvents] = useState([]);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    priority: 'all',
+    startDate: '',
+    endDate: '',
+    location: '',
+    attendee: ''
+  });
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   // Load events from meetingService on component mount
   useEffect(() => {
@@ -41,6 +51,14 @@ const Calendar = () => {
     };
     loadEvents();
   }, []);
+
+  // Update showSearchResults when search is active
+  useEffect(() => {
+    const isSearching = searchTerm || 
+      selectedFilter !== 'all' || 
+      Object.values(advancedFilters).some(v => v !== '' && v !== 'all');
+    setShowSearchResults(isSearching);
+  }, [searchTerm, selectedFilter, advancedFilters]);
 
   const months = [
     'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
@@ -104,12 +122,82 @@ const Calendar = () => {
     });
   };
 
-  const filteredEvents = events.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = selectedFilter === 'all' || event.type === selectedFilter;
-    return matchesSearch && matchesFilter;
-  });
+  // Enhanced search and filter logic using useMemo
+  const filteredEvents = useMemo(() => {
+    return events.filter(event => {
+      // Basic type filter
+      if (selectedFilter !== 'all' && event.type !== selectedFilter) {
+        return false;
+      }
+
+      // Search term matching across multiple fields
+      const searchFields = [
+        event.title,
+        event.description,
+        event.location,
+        ...(event.attendees || []),
+        event.type,
+        event.priority
+      ].map(field => (field || '').toLowerCase());
+
+      const searchTerms = searchTerm.toLowerCase().split(' ');
+      const matchesSearch = searchTerms.every(term =>
+        searchFields.some(field => field.includes(term))
+      );
+
+      if (!matchesSearch) {
+        return false;
+      }
+
+      // Advanced filters
+      if (advancedFilters.priority !== 'all' && event.priority !== advancedFilters.priority) {
+        return false;
+      }
+
+      if (advancedFilters.startDate && new Date(event.date) < new Date(advancedFilters.startDate)) {
+        return false;
+      }
+
+      if (advancedFilters.endDate && new Date(event.date) > new Date(advancedFilters.endDate)) {
+        return false;
+      }
+
+      if (advancedFilters.location && 
+          !event.location.toLowerCase().includes(advancedFilters.location.toLowerCase())) {
+        return false;
+      }
+
+      if (advancedFilters.attendee && 
+          !event.attendees.some(attendee => 
+            attendee.toLowerCase().includes(advancedFilters.attendee.toLowerCase())
+          )) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [events, searchTerm, selectedFilter, advancedFilters]);
+
+  // Reset all filters
+  const resetFilters = () => {
+    setSearchTerm('');
+    setSelectedFilter('all');
+    setAdvancedFilters({
+      priority: 'all',
+      startDate: '',
+      endDate: '',
+      location: '',
+      attendee: ''
+    });
+  };
+
+  // Handle advanced filter changes
+  const handleAdvancedFilterChange = (name, value) => {
+    setAdvancedFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const navigateMonth = (direction) => {
     const newDate = new Date(currentDate);
@@ -128,7 +216,9 @@ const Calendar = () => {
 
   const isToday = (date) => {
     const today = new Date();
-    return date.toDateString() === today.toDateString();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
   };
 
   const isSelectedDate = (date) => {
@@ -148,7 +238,7 @@ const Calendar = () => {
   const handleUpdateEvent = (eventData) => {
     meetingService.updateEvent(selectedEvent.id, eventData);
     setEvents(meetingService.getAllEvents());
-    setShowEventModal(false);
+    setShowAddModal(false);
     setSelectedEvent(null);
   };
 
@@ -163,8 +253,13 @@ const Calendar = () => {
 
   const handleEditEvent = (event) => {
     setSelectedEvent(event);
-    setShowAddModal(true);
     setShowEventModal(false);
+    setShowAddModal(true);
+  };
+
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    setSelectedEvent(null);
   };
 
   return (
@@ -205,7 +300,7 @@ const Calendar = () => {
             </button>
           </div>
 
-          <div className={styles.viewControls}>
+          <div className={styles.searchControls}>
             <div className={styles.searchBox}>
               <Search size={18} />
               <input
@@ -215,6 +310,15 @@ const Calendar = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className={styles.searchInput}
               />
+              {(searchTerm || selectedFilter !== 'all' || Object.values(advancedFilters).some(v => v !== '' && v !== 'all')) && (
+                <button
+                  className={styles.resetButton}
+                  onClick={resetFilters}
+                  title="Filter zurücksetzen"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
 
             <div className={styles.filterBox}>
@@ -230,125 +334,283 @@ const Calendar = () => {
                 <option value="call">Anrufe</option>
               </select>
             </div>
+
+            <button
+              className={`${styles.advancedSearchButton} ${showAdvancedSearch ? styles.active : ''}`}
+              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+            >
+              Erweiterte Suche
+            </button>
           </div>
         </div>
+
+        {showAdvancedSearch && (
+          <div className={styles.advancedSearchPanel}>
+            <div className={styles.advancedSearchGrid}>
+              <div className={styles.formGroup}>
+                <label>Priorität</label>
+                <select
+                  value={advancedFilters.priority}
+                  onChange={(e) => handleAdvancedFilterChange('priority', e.target.value)}
+                >
+                  <option value="all">Alle</option>
+                  <option value="high">Hoch</option>
+                  <option value="medium">Mittel</option>
+                  <option value="low">Niedrig</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Start Datum</label>
+                <input
+                  type="date"
+                  value={advancedFilters.startDate}
+                  onChange={(e) => handleAdvancedFilterChange('startDate', e.target.value)}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>End Datum</label>
+                <input
+                  type="date"
+                  value={advancedFilters.endDate}
+                  onChange={(e) => handleAdvancedFilterChange('endDate', e.target.value)}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Ort</label>
+                <input
+                  type="text"
+                  value={advancedFilters.location}
+                  onChange={(e) => handleAdvancedFilterChange('location', e.target.value)}
+                  placeholder="Ort suchen..."
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Teilnehmer</label>
+                <input
+                  type="text"
+                  value={advancedFilters.attendee}
+                  onChange={(e) => handleAdvancedFilterChange('attendee', e.target.value)}
+                  placeholder="Teilnehmer suchen..."
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className={styles.calendarContent}>
-        <div className={styles.calendarGrid}>
-          <div className={styles.weekdaysHeader}>
-            {weekdays.map(day => (
-              <div key={day} className={styles.weekday}>
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div className={styles.daysGrid}>
-            {getDaysInMonth(currentDate).map((date, index) => {
-              const dayEvents = getEventsForDate(date);
-              
-              return (
-                <div
-                  key={index}
-                  className={`${styles.dayCell} ${
-                    !isCurrentMonth(date) ? styles.otherMonth : ''
-                  } ${isToday(date) ? styles.today : ''} ${
-                    isSelectedDate(date) ? styles.selected : ''
-                  }`}
-                  onClick={() => setSelectedDate(date)}
-                >
-                  <div className={styles.dayNumber}>
-                    {date.getDate()}
-                  </div>
-                  <div className={styles.dayEvents}>
-                    {dayEvents.slice(0, 3).map(event => (
-                      <div
-                        key={event.id}
-                        className={styles.eventDot}
-                        style={{ backgroundColor: event.color }}
-                        title={event.title}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEventDetails(event);
-                        }}
-                      >
-                        <span className={styles.eventTitle}>{event.title}</span>
-                      </div>
-                    ))}
-                    {dayEvents.length > 3 && (
-                      <div className={styles.moreEvents}>
-                        +{dayEvents.length - 3} mehr
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className={styles.eventsPanel}>
-          <div className={styles.eventsPanelHeader}>
-            <h3>Events für {selectedDate.toLocaleDateString('de-DE')}</h3>
-          </div>
-          
-          <div className={styles.eventsList}>
-            {getEventsForDate(selectedDate).length === 0 ? (
-              <div className={styles.noEvents}>
-                <CalendarIcon size={48} />
-                <p>Keine Events für diesen Tag</p>
-              </div>
-            ) : (
-              getEventsForDate(selectedDate).map(event => (
-                <div
-                  key={event.id}
-                  className={styles.eventCard}
-                  onClick={() => openEventDetails(event)}
-                >
-                  <div
-                    className={styles.eventColor}
-                    style={{ backgroundColor: event.color }}
-                  ></div>
-                  <div className={styles.eventContent}>
-                    <div className={styles.eventHeader}>
-                      <h4 className={styles.eventTitle}>{event.title}</h4>
-                      <div className={styles.eventType}>
-                        {getEventTypeIcon(event.type)}
-                        <span>{getEventTypeLabel(event.type)}</span>
-                      </div>
-                    </div>
-                    <p className={styles.eventDescription}>{event.description}</p>
-                    <div className={styles.eventMeta}>
-                      <div className={styles.eventTime}>
-                        <Clock size={14} />
-                        <span>
-                          {event.date.toLocaleTimeString('de-DE', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                          {event.duration > 0 && ` (${event.duration}min)`}
-                        </span>
-                      </div>
-                      {event.location && (
-                        <div className={styles.eventLocation}>
-                          <MapPin size={14} />
-                          <span>{event.location}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    className={styles.eventMenu}
-                    onClick={(e) => e.stopPropagation()}
+        {/* Show search results when searching */}
+        {showSearchResults && (
+          <div className={styles.searchResultsPanel}>
+            <div className={styles.searchResultsHeader}>
+              <h3>Suchergebnisse ({filteredEvents.length} Events gefunden)</h3>
+              <button 
+                className={styles.closeSearchButton}
+                onClick={() => {
+                  resetFilters();
+                  setShowSearchResults(false);
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className={styles.searchResultsList}>
+              {filteredEvents.length === 0 ? (
+                <div className={styles.noSearchResults}>
+                  <Search size={48} />
+                  <p>Keine Events gefunden</p>
+                  <button 
+                    className={styles.resetSearchButton}
+                    onClick={resetFilters}
                   >
-                    <MoreVertical size={16} />
+                    Suche zurücksetzen
                   </button>
                 </div>
-              ))
-            )}
+              ) : (
+                filteredEvents.map(event => (
+                  <div 
+                    key={event.id} 
+                    className={styles.searchResultCard}
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setShowEventModal(true);
+                    }}
+                  >
+                    <div 
+                      className={styles.eventColor}
+                      style={{ backgroundColor: event.color }}
+                    />
+                    <div className={styles.searchResultContent}>
+                      <div className={styles.searchResultHeader}>
+                        <h4>{event.title}</h4>
+                        <span className={styles.eventType}>
+                          {getEventTypeIcon(event.type)}
+                          {getEventTypeLabel(event.type)}
+                        </span>
+                      </div>
+                      
+                      <p className={styles.eventDescription}>
+                        {event.description}
+                      </p>
+                      
+                      <div className={styles.eventMeta}>
+                        <span className={styles.eventTime}>
+                          <Clock size={14} />
+                          {event.date.toLocaleDateString('de-DE')} um{' '}
+                          {event.date.toLocaleTimeString('de-DE', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                        {event.location && (
+                          <span className={styles.eventLocation}>
+                            <MapPin size={14} />
+                            {event.location}
+                          </span>
+                        )}
+                        {event.attendees?.length > 0 && (
+                          <span className={styles.eventAttendees}>
+                            <Users size={14} />
+                            {event.attendees.length} Teilnehmer
+                          </span>
+                        )}
+                        <span className={`${styles.eventPriority} ${styles[event.priority]}`}>
+                          <AlertCircle size={14} />
+                          {event.priority === 'high' ? 'Hoch' : 
+                           event.priority === 'medium' ? 'Mittel' : 'Niedrig'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Show calendar grid when not searching */}
+        {!showSearchResults && (
+          <>
+            <div className={styles.calendarGrid}>
+              <div className={styles.weekdaysHeader}>
+                {weekdays.map(day => (
+                  <div key={day} className={styles.weekday}>
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <div className={styles.daysGrid}>
+                {getDaysInMonth(currentDate).map((date, index) => {
+                  const dayEvents = getEventsForDate(date);
+                  
+                  return (
+                    <div
+                      key={index}
+                      className={`${styles.dayCell} ${
+                        !isCurrentMonth(date) ? styles.otherMonth : ''
+                      } ${isToday(date) ? styles.today : ''} ${
+                        isSelectedDate(date) ? styles.selected : ''
+                      }`}
+                      onClick={() => setSelectedDate(date)}
+                    >
+                      <div className={styles.dayNumber}>
+                        {date.getDate()}
+                      </div>
+                      <div className={styles.dayEvents}>
+                        {dayEvents.slice(0, 3).map(event => (
+                          <div
+                            key={event.id}
+                            className={styles.eventDot}
+                            style={{ backgroundColor: event.color }}
+                            title={event.title}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEventDetails(event);
+                            }}
+                          >
+                            <span className={styles.eventTitle}>{event.title}</span>
+                          </div>
+                        ))}
+                        {dayEvents.length > 3 && (
+                          <div className={styles.moreEvents}>
+                            +{dayEvents.length - 3} mehr
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className={styles.eventsPanel}>
+              <div className={styles.eventsPanelHeader}>
+                <h3>Events für {selectedDate.toLocaleDateString('de-DE')}</h3>
+              </div>
+              
+              <div className={styles.eventsList}>
+                {getEventsForDate(selectedDate).length === 0 ? (
+                  <div className={styles.noEvents}>
+                    <CalendarIcon size={48} />
+                    <p>Keine Events für diesen Tag</p>
+                  </div>
+                ) : (
+                  getEventsForDate(selectedDate).map(event => (
+                    <div
+                      key={event.id}
+                      className={styles.eventCard}
+                      onClick={() => openEventDetails(event)}
+                    >
+                      <div
+                        className={styles.eventColor}
+                        style={{ backgroundColor: event.color }}
+                      ></div>
+                      <div className={styles.eventContent}>
+                        <div className={styles.eventHeader}>
+                          <h4 className={styles.eventTitle}>{event.title}</h4>
+                          <div className={styles.eventType}>
+                            {getEventTypeIcon(event.type)}
+                            <span>{getEventTypeLabel(event.type)}</span>
+                          </div>
+                        </div>
+                        <p className={styles.eventDescription}>{event.description}</p>
+                        <div className={styles.eventMeta}>
+                          <div className={styles.eventTime}>
+                            <Clock size={14} />
+                            <span>
+                              {event.date.toLocaleTimeString('de-DE', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                              {event.duration > 0 && ` (${event.duration}min)`}
+                            </span>
+                          </div>
+                          {event.location && (
+                            <div className={styles.eventLocation}>
+                              <MapPin size={14} />
+                              <span>{event.location}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        className={styles.eventMenu}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Event Details Modal */}
@@ -462,10 +724,7 @@ const Calendar = () => {
       {/* Add/Edit Event Modal */}
       <EventFormModal
         isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          setSelectedEvent(null);
-        }}
+        onClose={handleCloseAddModal}
         onSubmit={selectedEvent ? handleUpdateEvent : handleAddEvent}
         initialData={selectedEvent}
       />
