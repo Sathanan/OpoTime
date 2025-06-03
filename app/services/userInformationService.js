@@ -31,16 +31,17 @@ export async function getUserInformation() {
 
 /**
  * Aktualisiert ein bestimmtes Feld der Benutzerinformationen.
- * @param {string} model_attribut - Der Feldname, z. B. "email" oder "location".
+ * @param {string} model_attribut - Der Feldname, z. B. "email" oder "location".
  * @param {string} value - Der neue Wert für das Feld.
  * @returns {Promise<UserInformation[]>} Das aktualisierte UserInformation-Objekt im Array.
  */
 export async function updateUserInformation(model_attribut, value) {
     try {
-        const body = JSON.stringify({ [model_attribut]: value });
-        logBody("updateUserInformation", body);
+        const formData = new FormData();
+        formData.append(model_attribut, value);
+        logBody("updateUserInformation", `${model_attribut}: ${value}`);
 
-        const response = await makeApiCall("info", "PATCH", body, true);
+        const response = await makeApiCall("info", "PATCH", formData, true);
         logResponse("updateUserInformation", response);
 
         if (!response.ok) {
