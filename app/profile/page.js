@@ -17,6 +17,7 @@ import {
   Settings,
   CheckCircle
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 import styles from './profile.module.css';
 
@@ -28,12 +29,12 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { isDarkMode, toggleTheme } = useTheme();
 
   const [profileData, setProfileData] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [imageUrl, setImageUrl] = useState(profileData?.avatar || null);
-
 
   useEffect(() => {
     async function fetchData() {
@@ -65,7 +66,7 @@ const Profile = () => {
           timezone: user.user_timezone || '',
           language: Array.isArray(user.languages) ? user.languages[0] : user.languages || 'English',
           notifications: true,
-          darkMode: true
+          darkMode: isDarkMode
         });
       } catch (err) {
         console.error("DEBUG: Fehler beim Laden des Profils:", err);
@@ -76,9 +77,12 @@ const Profile = () => {
     }
 
     fetchData();
-  }, []);
+  }, [isDarkMode]);
 
   const handleInputChange = (field, value) => {
+    if (field === 'darkMode') {
+      toggleTheme();
+    }
     setProfileData(prev => ({
       ...prev,
       [field]: value

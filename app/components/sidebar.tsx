@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import styles from './css/sidebar.module.css';
 import { logout } from '../api/auth';
+import { useTheme } from '../context/ThemeContext';
+
 interface SidebarProps {
   className?: string;
   onToggle?: (expanded: boolean) => void;
@@ -30,14 +32,10 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { isDarkMode, toggleTheme } = useTheme();
   const [activeItem, setActiveItem] = useState('dashboard');
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -83,12 +81,9 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
       setIsExpanded(false);
     }
   };
+
   const toggleSidebar = () => {
     setIsExpanded(!isExpanded);
-  };
-
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
   };
 
   const toggleTimer = () => {
@@ -194,13 +189,13 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
           <button
             className={`${styles.controlButton} ${styles.collapse}`}
             onClick={handleLogout}
-            title={isExpanded ? 'Collapse Sidebar' : 'Expand Sidebar'}
+            title="Logout"
           >
             <div className={styles.controlIcon}>
-              {<LogOut size={18} />}
+              <LogOut size={18} />
             </div>
             <span className={styles.controlLabel}>
-              {isExpanded ? 'Logout' : 'Login'}
+              Logout
             </span>
           </button>
           <button
