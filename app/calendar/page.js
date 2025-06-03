@@ -22,6 +22,7 @@ import {
 import styles from './calendar.module.css';
 import meetingService from '../services/meetingService';
 import EventFormModal from '../components/EventFormModal';
+import ReminderModal from '../components/ReminderModal';
 
 const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -42,6 +43,7 @@ const Calendar = () => {
   });
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
 
   // Load events from meetingService on component mount
   useEffect(() => {
@@ -704,7 +706,13 @@ const Calendar = () => {
                   <Edit size={16} />
                   Bearbeiten
                 </button>
-                <button className={styles.actionButton}>
+                <button 
+                  className={styles.actionButton}
+                  onClick={() => {
+                    setShowReminderModal(true);
+                    setShowEventModal(false);
+                  }}
+                >
                   <Bell size={16} />
                   Erinnerung
                 </button>
@@ -728,6 +736,15 @@ const Calendar = () => {
         onSubmit={selectedEvent ? handleUpdateEvent : handleAddEvent}
         initialData={selectedEvent}
       />
+
+      {/* Reminder Modal */}
+      {showReminderModal && selectedEvent && (
+        <ReminderModal
+          isOpen={showReminderModal}
+          onClose={() => setShowReminderModal(false)}
+          event={selectedEvent}
+        />
+      )}
     </div>
   );
 };
