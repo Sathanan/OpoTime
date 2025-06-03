@@ -39,6 +39,8 @@ export default function Tasks() {
   const [searchTerm, setSearchTerm] = useState("");
   const [projects, setProjects] = useState([]); // Changed from ["General"] to empty array
   const [selectedProject, setSelectedProject] = useState("");
+  const [selectedPriority, setSelectedPriority] = useState("all");
+  const [editingTaskData, setEditingTaskData] = useState(null);
 
   const [newTask, setNewTask] = useState({
     name: "",
@@ -60,17 +62,23 @@ export default function Tasks() {
     async function fetchData() {
       try {
         setIsLoading(true);
-        const [tasksData, projectsData] = await Promise.all([
-          getAllTask(),
-          getAllProjects()
-        ]);
+        let tasksData;
+        const projectsData = await getAllProjects();
+
+        if (selectedProject) {
+          tasksData = await getAllTaskByProject(selectedProject);
+        } else if (selectedPriority !== "all") {
+          tasksData = await getTaskByPriority(selectedPriority);
+        } else {
+          tasksData = await getAllTask();
+        }
 
         if (Array.isArray(tasksData)) {
           setTasks(tasksData);
         } else if (tasksData && typeof tasksData === "object") {
-          setTasks([tasksData]); // Wrap single task object in array
+          setTasks([tasksData]);
         } else {
-          setTasks([]); // Default to empty array
+          setTasks([]);
         }
 
         if (Array.isArray(projectsData)) {
@@ -90,8 +98,7 @@ export default function Tasks() {
     }
 
     fetchData();
-  }, []);
-
+  }, [selectedProject, selectedPriority]);
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -106,20 +113,73 @@ export default function Tasks() {
     return priorities.find((p) => p.value === priority)?.color || "#10b981";
   };
 
+  const startEditingTask = (task) => {
+    setEditingTaskData({
+      id: task.id,
+      text: task.text || "",
+      name: task.text || "",
+      status: task.status || "new",
+      priority: task.priority || "medium",
+      project: task.project || "",
+      due_date: task.due_date || "",
+      progress: task.progress || 0,
+      assigned_to: task.assigned_to
+    });
+    setEditingTask(task.id);
+  };
+
+  const cancelEditTask = () => {
+    setEditingTask(null);
+    setEditingTaskData(null);
+  };
+
+  const saveEditedTask = async () => {
+    if (editingTaskData && editingTask) {
+      try {
+        const result = await updateTask(
+          editingTask,
+          editingTaskData.status || "new",
+          editingTaskData.name,
+          editingTaskData.priority || "medium",
+          editingTaskData.due_date || null,
+          editingTaskData.progress || 0
+        );
+
+        if (result) {
+          setTasks(tasks.map(task =>
+            task.id === editingTask ? {
+              ...task,
+              text: editingTaskData.name,
+              status: editingTaskData.status || "new",
+              priority: editingTaskData.priority || "medium",
+              project: editingTaskData.project,
+              due_date: editingTaskData.due_date,
+              progress: editingTaskData.progress || 0
+            } : task
+          ));
+          setEditingTask(null);
+          setEditingTaskData(null);
+        }
+      } catch (error) {
+        console.error("Error updating task:", error);
+      }
+    }
+  };
+
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
       (task.text || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (task.project && 
        projects.find(p => p.id === task.project)?.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    if (filter === "all") return matchesSearch;
-    if (filter === "completed") return task.status === "completed" && matchesSearch;
-    if (filter === "pending") return task.status !== "completed" && matchesSearch;
-    if (filter === "overdue") {
-      const today = new Date().toISOString().split("T")[0];
-      return task.status !== "completed" && task.due_date && task.due_date < today && matchesSearch;
-    }
-    return matchesSearch;
+    const matchesFilter = 
+      filter === "all" ? true :
+      filter === "completed" ? task.status === "completed" :
+      filter === "pending" ? task.status !== "completed" :
+      filter === "overdue" ? (task.status !== "completed" && task.due_date && task.due_date < new Date().toISOString().split("T")[0]) :
+      true;
+
+    return matchesSearch && matchesFilter;
   });
 
   const toggleTaskCompletion = async (taskId) => {
@@ -150,35 +210,34 @@ export default function Tasks() {
   };
 
   const addTask = async () => {
-  if (newTask.name.trim()) {
-    try {
-      const createdTask = await createTask(
-        newTask.project || null,
-        newTask.status,
-        newTask.name,
-        newTask.priority,       
-        newTask.dueDate || null,
-        newTask.estimatedTime || 0
-      );
+    if (newTask.name.trim()) {
+      try {
+        const createdTask = await createTask(
+          newTask.project || null,
+          newTask.status,
+          newTask.name,
+          newTask.priority,       
+          newTask.dueDate || null,
+          newTask.estimatedTime || 0
+        );
 
-      if (createdTask) {
-        setTasks([...tasks, createdTask]);
-        setNewTask({
-          name: "",
-          project: selectedProject || "",
-          priority: "medium",  
-          status: "new",
-          dueDate: "",
-          estimatedTime: 3600,
-        });
-        setIsAddingTask(false);
+        if (createdTask) {
+          setTasks([...tasks, createdTask]);
+          setNewTask({
+            name: "",
+            project: selectedProject || "",
+            priority: "medium",  
+            status: "new",
+            dueDate: "",
+            estimatedTime: 3600,
+          });
+          setIsAddingTask(false);
+        }
+      } catch (error) {
+        console.error("Fehler beim Erstellen der Aufgabe:", error);
       }
-    } catch (error) {
-      console.error("Fehler beim Erstellen der Aufgabe:", error);
     }
-  }
-};
-
+  };
 
   const cancelAddTask = () => {
     setNewTask({
@@ -235,7 +294,7 @@ export default function Tasks() {
 
         {/* Stats Grid */}
         <div className={styles.statsGrid}>
-          <div className={styles.statCard}>
+          <div key="total" className={styles.statCard}>
             <div className={`${styles.statIcon} ${styles.totalIcon}`}>
               <Activity size={24} />
             </div>
@@ -245,7 +304,7 @@ export default function Tasks() {
             </div>
           </div>
 
-          <div className={styles.statCard}>
+          <div key="completed" className={styles.statCard}>
             <div className={`${styles.statIcon} ${styles.completedIcon}`}>
               <CheckCircle size={24} />
             </div>
@@ -255,7 +314,7 @@ export default function Tasks() {
             </div>
           </div>
 
-          <div className={styles.statCard}>
+          <div key="pending" className={styles.statCard}>
             <div className={`${styles.statIcon} ${styles.pendingIcon}`}>
               <Clock size={24} />
             </div>
@@ -265,7 +324,7 @@ export default function Tasks() {
             </div>
           </div>
 
-          <div className={styles.statCard}>
+          <div key="overdue" className={styles.statCard}>
             <div className={`${styles.statIcon} ${styles.overdueIcon}`}>
               <AlertCircle size={24} />
             </div>
@@ -290,23 +349,51 @@ export default function Tasks() {
               />
             </div>
 
-            <div className={styles.filterButtons}>
-              {[
-                { key: "all", label: "All" },
-                { key: "pending", label: "Pending" },
-                { key: "completed", label: "Completed" },
-                { key: "overdue", label: "Overdue" },
-              ].map((filterOption) => (
-                <button
-                  key={filterOption.key}
-                  onClick={() => setFilter(filterOption.key)}
-                  className={`${styles.filterButton} ${
-                    filter === filterOption.key ? styles.activeFilter : ""
-                  }`}
-                >
-                  {filterOption.label}
-                </button>
-              ))}
+            <div className={styles.filterControls}>
+              <select
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+                className={styles.filterSelect}
+              >
+                <option key="all-projects" value="">All Projects</option>
+                {projects.map((project) => (
+                  <option key={`project-${project.id}`} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedPriority}
+                onChange={(e) => setSelectedPriority(e.target.value)}
+                className={styles.filterSelect}
+              >
+                <option key="all-priorities" value="all">All Priorities</option>
+                {priorities.map((priority) => (
+                  <option key={`priority-${priority.value}`} value={priority.value}>
+                    {priority.label}
+                  </option>
+                ))}
+              </select>
+
+              <div className={styles.filterButtons}>
+                {[
+                  { key: "all", label: "All" },
+                  { key: "pending", label: "Pending" },
+                  { key: "completed", label: "Completed" },
+                  { key: "overdue", label: "Overdue" },
+                ].map((filterOption) => (
+                  <button
+                    key={`filter-${filterOption.key}`}
+                    onClick={() => setFilter(filterOption.key)}
+                    className={`${styles.filterButton} ${
+                      filter === filterOption.key ? styles.activeFilter : ""
+                    }`}
+                  >
+                    {filterOption.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -343,9 +430,9 @@ export default function Tasks() {
                 }
                 className={styles.projectSelect}
               >
-                <option value="">Select Project</option>
+                <option key="select-project" value="">Select Project</option>
                 {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
+                  <option key={`new-project-${project.id}`} value={project.id}>
                     {project.name}
                   </option>
                 ))}
@@ -422,12 +509,12 @@ export default function Tasks() {
 
           <div className={styles.tasksList}>
             {filteredTasks.length === 0 ? (
-              <div className={styles.emptyState}>
+              <div key="empty-state" className={styles.emptyState}>
                 <Target size={48} />
                 <h3>No tasks found</h3>
                 <p>
-                  {searchTerm || filter !== "all"
-                    ? "Try adjusting your search or filter"
+                  {searchTerm || filter !== "all" || selectedProject || selectedPriority !== "all"
+                    ? "Try adjusting your search or filters"
                     : "Create your first task to get started"}
                 </p>
               </div>
@@ -435,82 +522,173 @@ export default function Tasks() {
               filteredTasks.map((task) => {
                 const project = projects.find(p => p.id === task.project);
                 return (
-                  <div key={task.id} className={styles.taskItem}>
-                    <div className={styles.taskLeft}>
-                      <button
-                        onClick={() => toggleTaskCompletion(task.id)}
-                        className={styles.checkButton}
-                      >
-                        {task.status === "completed" ? (
-                          <CheckCircle
-                            size={20}
-                            className={styles.completedCheck}
+                  <div key={`task-${task.id}`} className={styles.taskItem}>
+                    {editingTask === task.id ? (
+                      <div className={styles.taskForm}>
+                        <div className={styles.formGrid}>
+                          <input
+                            type="text"
+                            placeholder="Task name..."
+                            value={editingTaskData.name}
+                            onChange={(e) =>
+                              setEditingTaskData({ ...editingTaskData, name: e.target.value, text: e.target.value })
+                            }
+                            className={styles.taskInput}
+                            autoFocus
                           />
-                        ) : (
-                          <Circle size={20} />
-                        )}
-                      </button>
+                          
+                          <select
+                            value={editingTaskData.project || ""}
+                            onChange={(e) =>
+                              setEditingTaskData({ ...editingTaskData, project: e.target.value })
+                            }
+                            className={styles.projectSelect}
+                          >
+                            <option key="edit-select-project" value="">Select Project</option>
+                            {projects.map((project) => (
+                              <option key={`edit-project-${project.id}`} value={project.id}>
+                                {project.name}
+                              </option>
+                            ))}
+                          </select>
 
-                      <div className={styles.taskInfo}>
-                        <h4
-                          className={`${styles.taskName} ${
-                            task.status === "completed" ? styles.completedTask : ""
-                          }`}
-                        >
-                          {task.text}
-                        </h4>
-                        <div className={styles.taskMeta}>
-                          {project && (
-                            <span className={styles.taskProject}>
-                              {project.name}
-                            </span>
-                          )}
-                          {task.priority && (
-                            <span
-                              className={styles.taskPriority}
-                              style={{
-                                backgroundColor: getPriorityColor(task.priority),
-                              }}
-                            >
-                              {
-                                priorities.find((p) => p.value === task.priority)
-                                  ?.label
-                              }
-                            </span>
-                          )}
-                          {task.estimatedTime && (
-                            <span className={styles.taskTime}>
-                              <Clock size={12} />
-                              {formatTime(task.estimatedTime)}
-                            </span>
-                          )}
-                          {task.due_date && (
-                            <span className={styles.taskDue}>
-                              <Calendar size={12} />
-                              {new Date(task.due_date).toLocaleDateString()}
-                            </span>
-                          )}
-                          <span className={styles.taskStatus}>
-                            {task.status.replace("-", " ")}
-                          </span>
+                          <select
+                            value={editingTaskData.status || "new"}
+                            onChange={(e) =>
+                              setEditingTaskData({ ...editingTaskData, status: e.target.value })
+                            }
+                            className={styles.statusSelect}
+                          >
+                            <option key="edit-status-new" value="new">New</option>
+                            <option key="edit-status-progress" value="in_progress">In Progress</option>
+                            <option key="edit-status-completed" value="completed">Completed</option>
+                          </select>
+
+                          <select
+                            value={editingTaskData.priority || "medium"}
+                            onChange={(e) =>
+                              setEditingTaskData({ ...editingTaskData, priority: e.target.value })
+                            }
+                            className={styles.prioritySelect}
+                          >
+                            {priorities.map((priority) => (
+                              <option key={`edit-priority-${priority.value}`} value={priority.value}>
+                                {priority.label}
+                              </option>
+                            ))}
+                          </select>
+
+                          <input
+                            type="date"
+                            value={editingTaskData.due_date || ""}
+                            onChange={(e) =>
+                              setEditingTaskData({ ...editingTaskData, due_date: e.target.value })
+                            }
+                            className={styles.dateInput}
+                          />
+
+                          <input
+                            type="number"
+                            placeholder="Progress (hours)"
+                            value={(editingTaskData.progress || 0) / 3600}
+                            onChange={(e) =>
+                              setEditingTaskData({
+                                ...editingTaskData,
+                                progress: e.target.value * 3600,
+                              })
+                            }
+                            className={styles.timeInput}
+                            min="0"
+                            max="24"
+                            step="0.5"
+                          />
+                        </div>
+
+                        <div className={styles.formActions}>
+                          <button onClick={saveEditedTask} className={styles.saveButton}>
+                            <Save size={16} />
+                            Save Changes
+                          </button>
+                          <button onClick={cancelEditTask} className={styles.cancelButton}>
+                            <X size={16} />
+                            Cancel
+                          </button>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className={styles.taskLeft}>
+                          <button
+                            onClick={() => toggleTaskCompletion(task.id)}
+                            className={styles.checkButton}
+                          >
+                            {(task.status || "new") === "completed" ? (
+                              <CheckCircle size={20} className={styles.completedCheck} />
+                            ) : (
+                              <Circle size={20} />
+                            )}
+                          </button>
 
-                    <div className={styles.taskActions}>
-                      <button
-                        onClick={() => setEditingTask(task.id)}
-                        className={styles.editButton}
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => deleteTask(task.id)}
-                        className={styles.deleteButton}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                          <div className={styles.taskInfo}>
+                            <h4
+                              className={`${styles.taskName} ${
+                                (task.status || "new") === "completed" ? styles.completedTask : ""
+                              }`}
+                            >
+                              {task.text || "Untitled Task"}
+                            </h4>
+                            <div className={styles.taskMeta}>
+                              {project && (
+                                <span key={`task-${task.id}-project`} className={styles.taskProject}>
+                                  {project.name}
+                                </span>
+                              )}
+                              {task.priority && (
+                                <span
+                                  key={`task-${task.id}-priority`}
+                                  className={styles.taskPriority}
+                                  style={{
+                                    backgroundColor: getPriorityColor(task.priority),
+                                  }}
+                                >
+                                  {priorities.find((p) => p.value === task.priority)?.label || "Medium"}
+                                </span>
+                              )}
+                              {task.progress > 0 && (
+                                <span key={`task-${task.id}-time`} className={styles.taskTime}>
+                                  <Clock size={12} />
+                                  {formatTime(task.progress)}
+                                </span>
+                              )}
+                              {task.due_date && (
+                                <span key={`task-${task.id}-due`} className={styles.taskDue}>
+                                  <Calendar size={12} />
+                                  {new Date(task.due_date).toLocaleDateString()}
+                                </span>
+                              )}
+                              <span key={`task-${task.id}-status`} className={styles.taskStatus}>
+                                {(task.status || "new").replace(/_/g, " ")}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className={styles.taskActions}>
+                          <button
+                            onClick={() => startEditingTask(task)}
+                            className={styles.editButton}
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => deleteTask(task.id)}
+                            className={styles.deleteButton}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })
