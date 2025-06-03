@@ -19,6 +19,8 @@ import {
   CheckCircle
 } from 'lucide-react';
 import styles from './calendar.module.css';
+import meetingService from '../services/meetingService';
+import EventFormModal from '../components/EventFormModal';
 
 const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -29,46 +31,16 @@ const Calendar = () => {
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [events, setEvents] = useState([]);
 
-  // Beispiel Events
-  const [events, setEvents] = useState([
-    {
-      id: 1,
-      title: 'Team Meeting',
-      description: 'Wöchentliches Team-Meeting zur Projektbesprechung',
-      date: new Date(2025, 4, 28, 10, 0), // 28. Mai 2025, 10:00
-      duration: 60, // Minuten
-      type: 'meeting',
-      location: 'Konferenzraum A',
-      attendees: ['Max Mustermann', 'Anna Schmidt'],
-      color: '#3B82F6',
-      priority: 'high'
-    },
-    {
-      id: 2,
-      title: 'Projektdeadline',
-      description: 'Abgabe des Website-Redesigns',
-      date: new Date(2025, 4, 30, 17, 0), // 30. Mai 2025, 17:00
-      duration: 0,
-      type: 'deadline',
-      location: '',
-      attendees: [],
-      color: '#EF4444',
-      priority: 'high'
-    },
-    {
-      id: 3,
-      title: 'Client Call',
-      description: 'Monatliches Update-Gespräch mit Kunde XY',
-      date: new Date(2025, 4, 29, 14, 30), // 29. Mai 2025, 14:30
-      duration: 45,
-      type: 'call',
-      location: 'Online',
-      attendees: ['Client XY'],
-      color: '#10B981',
-      priority: 'medium'
-    }
-  ]);
+  // Load events from meetingService on component mount
+  useEffect(() => {
+    const loadEvents = () => {
+      const allEvents = meetingService.getAllEvents();
+      setEvents(allEvents);
+    };
+    loadEvents();
+  }, []);
 
   const months = [
     'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
@@ -165,6 +137,34 @@ const Calendar = () => {
 
   const isCurrentMonth = (date) => {
     return date.getMonth() === currentDate.getMonth();
+  };
+
+  const handleAddEvent = (eventData) => {
+    const newEvent = meetingService.createEvent(eventData);
+    setEvents(meetingService.getAllEvents());
+    setShowAddModal(false);
+  };
+
+  const handleUpdateEvent = (eventData) => {
+    meetingService.updateEvent(selectedEvent.id, eventData);
+    setEvents(meetingService.getAllEvents());
+    setShowEventModal(false);
+    setSelectedEvent(null);
+  };
+
+  const handleDeleteEvent = (id) => {
+    if (window.confirm('Möchten Sie diesen Termin wirklich löschen?')) {
+      meetingService.deleteEvent(id);
+      setEvents(meetingService.getAllEvents());
+      setShowEventModal(false);
+      setSelectedEvent(null);
+    }
+  };
+
+  const handleEditEvent = (event) => {
+    setSelectedEvent(event);
+    setShowAddModal(true);
+    setShowEventModal(false);
   };
 
   return (
@@ -435,7 +435,10 @@ const Calendar = () => {
               </div>
 
               <div className={styles.modalActions}>
-                <button className={styles.actionButton}>
+                <button 
+                  className={styles.actionButton}
+                  onClick={() => handleEditEvent(selectedEvent)}
+                >
                   <Edit size={16} />
                   Bearbeiten
                 </button>
@@ -443,7 +446,10 @@ const Calendar = () => {
                   <Bell size={16} />
                   Erinnerung
                 </button>
-                <button className={styles.actionButton}>
+                <button 
+                  className={styles.actionButton}
+                  onClick={() => handleDeleteEvent(selectedEvent.id)}
+                >
                   <Trash2 size={16} />
                   Löschen
                 </button>
@@ -452,6 +458,17 @@ const Calendar = () => {
           </div>
         </div>
       )}
+
+      {/* Add/Edit Event Modal */}
+      <EventFormModal
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setSelectedEvent(null);
+        }}
+        onSubmit={selectedEvent ? handleUpdateEvent : handleAddEvent}
+        initialData={selectedEvent}
+      />
     </div>
   );
 };
