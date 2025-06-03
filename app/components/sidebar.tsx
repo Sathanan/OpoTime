@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { 
   Clock, 
   Home, 
@@ -31,9 +31,9 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(true);
   const { isDarkMode, toggleTheme } = useTheme();
-  const [activeItem, setActiveItem] = useState('dashboard');
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -68,7 +68,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
   ];
 
   const handleItemClick = (item: any) => {
-    setActiveItem(item.id);
     router.push(item.path);
     if (isMobile) {
       setIsExpanded(false);
@@ -94,6 +93,11 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
     if (isMobile && isExpanded) {
       setIsExpanded(false);
     }
+  };
+
+  // Funktion zum Bestimmen des aktiven Menüpunkts basierend auf dem aktuellen Pfad
+  const getActiveItem = (path: string) => {
+    return menuItems.find(item => item.path === path)?.id || '';
   };
 
   return (
@@ -154,10 +158,11 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
           <ul className={styles.navList}>
             {menuItems.map((item) => {
               const IconComponent = item.icon;
+              const isActive = pathname === item.path;
               return (
                 <li key={item.id} className={styles.navItem}>
                   <button
-                    className={`${styles.navButton} ${activeItem === item.id ? styles.active : ''}`}
+                    className={`${styles.navButton} ${isActive ? styles.active : ''}`}
                     onClick={() => handleItemClick(item)}
                     title={!isExpanded ? item.label : ''}
                   >
@@ -165,7 +170,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className, onToggle }) => {
                       <IconComponent size={20} />
                     </div>
                     <span className={styles.navLabel}>{item.label}</span>
-                    {activeItem === item.id && <div className={styles.activeIndicator}></div>}
+                    {isActive && <div className={styles.activeIndicator}></div>}
                   </button>
                 </li>
               );
