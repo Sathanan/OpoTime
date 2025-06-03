@@ -57,34 +57,41 @@ export default function Tasks() {
 
   // Fetch tasks and projects on component mount
   useEffect(() => {
-    const fetchData = async () => {
+    async function fetchData() {
       try {
-        // Fetch projects first
-        const projectsData = await getAllProjects();
-        if (projectsData) {
-          setProjects(projectsData);
-          
-          // If there are projects, set the first one as selected
-          if (projectsData.length > 0) {
-            setSelectedProject(projectsData[0].id);
-          }
+        setIsLoading(true);
+        const [tasksData, projectsData] = await Promise.all([
+          getAllTask(),
+          getAllProjects()
+        ]);
+
+        if (Array.isArray(tasksData)) {
+          setTasks(tasksData);
+        } else if (tasksData && typeof tasksData === "object") {
+          setTasks([tasksData]); // Wrap single task object in array
+        } else {
+          setTasks([]); // Default to empty array
         }
 
-        // Then fetch tasks
-        const tasksData = await getAllTask();
-        if (tasksData) {
-          setTasks(tasksData);
+        if (Array.isArray(projectsData)) {
+          setProjects(projectsData);
+        } else if (projectsData && typeof projectsData === "object") {
+          setProjects([projectsData]);
+        } else {
+          setProjects([]);
         }
-        
-        setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setTasks([]);
+        setProjects([]);
+      } finally {
         setIsLoading(false);
       }
-    };
-    
+    }
+
     fetchData();
   }, []);
+
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -101,7 +108,7 @@ export default function Tasks() {
 
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
-      task.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (task.text || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (task.project && 
        projects.find(p => p.id === task.project)?.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
