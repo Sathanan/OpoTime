@@ -1,9 +1,6 @@
 export class UserImage {
-  constructor({ id, user, image_url, image_id, type, uploaded_at }) {
-    this.id = id;
-    this.user = user;
-    this.imageUrl = image_url;
-    this.imageId = image_id;
+  constructor({ image, type, uploaded_at }) {
+    this.imageUrl = image; // This will now be the base64 data URL
     this.type = type;
     this.uploadedAt = new Date(uploaded_at);
   }

@@ -3,15 +3,19 @@ import { ShowError } from "../api/utilis/utillity";
 import { convertJsonToUserImage } from "../api/models/userimage";
 import { logData, logResponse, logBody, logParam } from "../utillity/logger";
 
-
 const DEFAULT_IMAGE_URL = "/default-avatar.png";
 
+/**
+ * Holt ein Benutzerbild anhand des Typs.
+ * @param {string} type - Der Typ des Bildes (z.B. "profile", "background")
+ * @returns {Promise<UserImage>} Das Benutzerbild oder ein Standard-Bild
+ */
 export async function getUserImage(type) {
     try {
         const param = `?type=${type}`;
         logParam("getUserImage", param);
         
-        const response = await makeApiCall("userImage", "GET", null, true, param)
+        const response = await makeApiCall("userImage", "GET", null, true, param);
         logResponse("getUserImage", response);
         
         if (!response.ok) {
@@ -31,13 +35,14 @@ export async function getUserImage(type) {
     }
 }
 
+/**
+ * Lädt ein neues Benutzerbild hoch. Löscht automatisch das alte Bild des gleichen Typs.
+ * @param {File} file - Die Bilddatei
+ * @param {string} type - Der Typ des Bildes (z.B. "profile", "background")
+ * @returns {Promise<UserImage>} Das hochgeladene Bild
+ */
 export async function uploadUserImage(file, type) {
     try {
-        const existing = await getUserImage(type).catch(() => null);
-        if (existing && existing.imageId) {
-            await deleteUserImage(existing.imageId);
-        }
-
         const formData = new FormData();
         formData.append('file', file);
         formData.append('type', type);
@@ -50,7 +55,7 @@ export async function uploadUserImage(file, type) {
             return;
         }
         const data = await response.json();
-        logData("getIuploadUserImagenvitationByProject", data);
+        logData("uploadUserImage", data);
         
         return convertJsonToUserImage(data);
     } catch (err) {
@@ -59,9 +64,14 @@ export async function uploadUserImage(file, type) {
     }
 }
 
-export async function deleteUserImage(imageId) {
+/**
+ * Löscht ein Benutzerbild anhand des Typs.
+ * @param {string} type - Der Typ des zu löschenden Bildes
+ * @returns {Promise<boolean>} True wenn erfolgreich gelöscht
+ */
+export async function deleteUserImage(type) {
     try {
-        const param = `?image_id=${imageId}`;
+        const param = `?type=${type}`;
         logParam("deleteUserImage", param);
         
         const response = await makeApiCall("userImage", "DELETE", null, true, param);
@@ -78,9 +88,14 @@ export async function deleteUserImage(imageId) {
     }
 }
 
-export async function updateUserImageType(imageId, newType) {
+/**
+ * Aktualisiert den Typ eines Benutzerbildes.
+ * @param {string} type - Der neue Typ für das Bild
+ * @returns {Promise<UserImage>} Das aktualisierte Bild
+ */
+export async function updateUserImageType(type) {
     try {
-        const body = JSON.stringify({ image_id: imageId, type: newType });
+        const body = JSON.stringify({ type });
         logBody("updateUserImageType", body);
         
         const response = await makeApiCall("userImage", "PATCH", body, true);
