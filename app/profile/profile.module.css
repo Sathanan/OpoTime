@@ -523,3 +523,36 @@ input:checked + .slider:before {
     grid-template-columns: 1fr;
   }
 }
+
+.languageSelect {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.languageButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background: var(--background);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.languageButton:hover {
+  background: var(--hover-color);
+}
+
+.activeLanguage {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.activeLanguage:hover {
+  background: var(--primary-color-dark);
+}

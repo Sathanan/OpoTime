@@ -15,9 +15,11 @@ import {
   Save,
   X,
   Settings,
-  CheckCircle
+  CheckCircle,
+  Globe
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 import styles from './profile.module.css';
 
@@ -30,6 +32,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { isDarkMode, toggleTheme } = useTheme();
+  const { currentLanguage, setCurrentLanguage, translate, languages } = useLanguage();
 
   const [profileData, setProfileData] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -56,9 +59,11 @@ const Profile = () => {
         const user = Array.isArray(data) ? data[0] : data;
 
         setProfileData({
-          name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
           email: user.email || '',
           phone: user.phone || '',
+          job: user.job || '',
           location: user.location || '',
           joined: user.joined_at || '',
           bio: user.bio || '',
@@ -93,13 +98,14 @@ const Profile = () => {
     if (!profileData) return;
 
     const updates = [
-      ['first_name', profileData.name.split(' ')[0]],
-      ['last_name', profileData.name.split(' ')[1] || ''],
+      ['first_name', profileData.first_name],
+      ['last_name', profileData.last_name],
       ['email', profileData.email],
       ['phone', profileData.phone],
+      ['job', profileData.job],
       ['location', profileData.location],
       ['user_timezone', profileData.timezone],
-      ['languages', profileData.language], // String statt Array
+      ['languages', profileData.language],
       ['bio', profileData.bio],
     ];
 
@@ -140,9 +146,9 @@ const handleFileChange = async (event) => {
 
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: User },
-    { id: 'activity', label: 'Activity', icon: Clock },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'overview', label: translate('Overview'), icon: User },
+    { id: 'activity', label: translate('Activity'), icon: Clock },
+    { id: 'settings', label: translate('Settings'), icon: Settings }
   ];
 
   const recentActivity = [
@@ -175,16 +181,16 @@ const handleFileChange = async (event) => {
                 />
               </div>
               <div className={styles.userInfo}>
-                <h1 className={styles.userName}>{profileData.name || "Nutzer"}</h1>
-                <p className={styles.userTitle}></p>
+                <h1 className={styles.userName}>{`${profileData?.first_name || ''} ${profileData?.last_name || ''}`}</h1>
+                <p className={styles.userTitle}>{profileData?.job || ''}</p>
                 <div className={styles.userMeta}>
                   <span className={styles.metaItem}>
                     <MapPin size={14} />
-                    {profileData.location || "-"}
+                    {profileData?.location || "-"}
                   </span>
                   <span className={styles.metaItem}>
                     <Calendar size={14} />
-                    Joined {profileData.joined ? new Date(profileData.joined).toLocaleDateString() : "-"}
+                    Joined {profileData?.joined ? new Date(profileData.joined).toLocaleDateString() : "-"}
                   </span>
                 </div>
               </div>
@@ -230,25 +236,27 @@ const handleFileChange = async (event) => {
           {activeTab === 'overview' && (
             <div className={styles.overviewContent}>
               <div className={styles.profileSection}>
-                <h2 className={styles.sectionTitle}>Personal Information</h2>
+                <h2 className={styles.sectionTitle}>{translate('Personal Information')}</h2>
                 <div className={styles.formGrid}>
                   {[
-                    ['Full Name', 'name', 'text'],
+                    ['First Name', 'first_name', 'text'],
+                    ['Last Name', 'last_name', 'text'],
                     ['Email', 'email', 'email'],
                     ['Phone', 'phone', 'tel'],
+                    ['Job Title', 'job', 'text'],
                     ['Location', 'location', 'text']
                   ].map(([label, field, type]) => (
                     <div key={field} className={styles.formGroup}>
-                      <label className={styles.label}>{label}</label>
+                      <label className={styles.label}>{translate(label)}</label>
                       {isEditing ? (
                         <input
                           type={type}
-                          value={profileData[field]}
+                          value={profileData[field] || ''}
                           onChange={(e) => handleInputChange(field, e.target.value)}
                           className={styles.input}
                         />
                       ) : (
-                        <p className={styles.value}>{profileData[field]}</p>
+                        <p className={styles.value}>{profileData?.[field] || ''}</p>
                       )}
                     </div>
                   ))}
@@ -331,12 +339,14 @@ const handleFileChange = async (event) => {
 
           {activeTab === 'settings' && (
             <div className={styles.settingsContent}>
-              <h2 className={styles.sectionTitle}>Preferences</h2>
+              <h2 className={styles.sectionTitle}>{translate('Preferences')}</h2>
               <div className={styles.settingsGrid}>
                 <div className={styles.settingItem}>
                   <div className={styles.settingInfo}>
-                    <h3 className={styles.settingName}>Dark Mode</h3>
-                    <p className={styles.settingDescription}>Toggle between light and dark themes</p>
+                    <h3 className={styles.settingName}>{translate('Dark Mode')}</h3>
+                    <p className={styles.settingDescription}>
+                      {translate('Toggle between light and dark themes')}
+                    </p>
                   </div>
                   <label className={styles.switch}>
                     <input
@@ -346,6 +356,29 @@ const handleFileChange = async (event) => {
                     />
                     <span className={styles.slider}></span>
                   </label>
+                </div>
+
+                <div className={styles.settingItem}>
+                  <div className={styles.settingInfo}>
+                    <h3 className={styles.settingName}>{translate('Language Settings')}</h3>
+                    <p className={styles.settingDescription}>
+                      {translate('Choose your preferred language')}
+                    </p>
+                  </div>
+                  <div className={styles.languageSelect}>
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => setCurrentLanguage(lang.code)}
+                        className={`${styles.languageButton} ${
+                          currentLanguage === lang.code ? styles.activeLanguage : ''
+                        }`}
+                      >
+                        <Globe size={16} />
+                        {lang.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
