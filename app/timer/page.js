@@ -18,18 +18,27 @@ import {
   TrendingUp,
   Award,
   Zap,
+  List,
+  LayoutGrid,
+  AlignLeft,
+  ChevronDown,
+  ChevronUp,
+  MoreVertical,
 } from "lucide-react";
 import styles from "./timer.module.css";
 
 const Timer = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [currentTask, setCurrentTask] = useState("");
-  const [currentProject, setCurrentProject] = useState("General");
+  const [currentShift, setCurrentShift] = useState(null);
+  const [shiftTasks, setShiftTasks] = useState([]);
+  const [viewMode, setViewMode] = useState("timeline");
   const [isAddingTask, setIsAddingTask] = useState(false);
-  const [newTask, setNewTask] = useState({ name: "", project: "General" });
+  const [isShiftEndModalOpen, setIsShiftEndModalOpen] = useState(false);
+  const [newTask, setNewTask] = useState({ name: "", project: "General", startTime: 0 });
+  const [activeTaskId, setActiveTaskId] = useState(null);
 
-  // Mock data for projects and recent sessions
+  // Mock data for projects
   const [projects] = useState([
     "General",
     "Web Development",
@@ -45,6 +54,7 @@ const Timer = () => {
       project: "Web Development",
       duration: 7200,
       date: "2024-05-24",
+      startTime: Date.now() - 7200000,
     },
     {
       id: 2,
@@ -52,6 +62,7 @@ const Timer = () => {
       project: "Mobile App",
       duration: 5400,
       date: "2024-05-24",
+      startTime: Date.now() - 5400000,
     },
     {
       id: 3,
@@ -59,60 +70,98 @@ const Timer = () => {
       project: "Web Development",
       duration: 3600,
       date: "2024-05-23",
-    },
-    {
-      id: 4,
-      task: "User Research",
-      project: "Design System",
-      duration: 4800,
-      date: "2024-05-23",
+      startTime: Date.now() - 3600000,
     },
   ]);
 
   const [todayStats] = useState({
-    totalTime: 16200, // 4.5 hours in seconds
+    totalTime: 16200,
     sessions: 6,
     productivity: 94,
     focusTime: 12600,
   });
 
-  // Timer logic
+  // Timer logic for shift
   useEffect(() => {
     let interval = null;
     if (isRunning) {
       interval = setInterval(() => {
         setCurrentTime((prevTime) => prevTime + 1);
+        if (activeTaskId) {
+          setShiftTasks(prevTasks =>
+            prevTasks.map(task =>
+              task.id === activeTaskId
+                ? { ...task, duration: (task.duration || 0) + 1 }
+                : task
+            )
+          );
+        }
       }, 1000);
-    } else if (!isRunning && currentTime !== 0) {
-      clearInterval(interval);
     }
     return () => clearInterval(interval);
-  }, [isRunning, currentTime]);
+  }, [isRunning, activeTaskId]);
 
-  const startTimer = () => {
-    if (!currentTask.trim()) {
-      alert("Please enter a task name");
-      return;
-    }
+  const startShift = () => {
+    setCurrentShift({
+      startTime: Date.now(),
+      tasks: [],
+    });
     setIsRunning(true);
   };
 
-  const pauseTimer = () => {
+  const pauseShift = () => {
     setIsRunning(false);
+    setActiveTaskId(null);
   };
 
-  const stopTimer = () => {
+  const endShift = () => {
     setIsRunning(false);
-    if (currentTime > 0) {
-      // Here you would save the session
-      console.log("Session saved:", {
-        task: currentTask,
-        project: currentProject,
+    setActiveTaskId(null);
+    setIsShiftEndModalOpen(true);
+  };
+
+  const finalizeShift = () => {
+    console.log("Shift saved:", {
         duration: currentTime,
+      tasks: shiftTasks,
       });
-    }
     setCurrentTime(0);
-    setCurrentTask("");
+    setCurrentShift(null);
+    setShiftTasks([]);
+    setActiveTaskId(null);
+    setIsShiftEndModalOpen(false);
+  };
+
+  const addTaskToShift = () => {
+    if (newTask.name.trim()) {
+      const task = {
+        id: Date.now(),
+        name: newTask.name,
+        project: newTask.project,
+        startTime: Date.now(),
+        duration: 0,
+        isRunning: false,
+      };
+      setShiftTasks([...shiftTasks, task]);
+      setNewTask({ name: "", project: "General", startTime: 0 });
+      setIsAddingTask(false);
+    }
+  };
+
+  const toggleTaskTimer = (taskId) => {
+    if (!isRunning) {
+      setIsRunning(true);
+    }
+
+    setShiftTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId
+          ? { ...task, isRunning: !task.isRunning }
+          : { ...task, isRunning: false }
+      )
+    );
+
+    setActiveTaskId(prevId => prevId === taskId ? null : taskId);
   };
 
   const formatTime = (seconds) => {
@@ -133,18 +182,68 @@ const Timer = () => {
     return `${minutes}m`;
   };
 
-  const addTask = () => {
-    if (newTask.name.trim()) {
-      setCurrentTask(newTask.name);
-      setCurrentProject(newTask.project);
-      setNewTask({ name: "", project: "General" });
-      setIsAddingTask(false);
-    }
-  };
+  // Render task item based on view mode
+  const renderTaskItem = (task) => {
+    const taskControls = (
+      <div className={styles.taskControls}>
+        <button
+          onClick={() => toggleTaskTimer(task.id)}
+          className={`${styles.taskControlButton} ${task.isRunning ? styles.running : ''}`}
+          title={task.isRunning ? "Pause Task" : "Start Task"}
+        >
+          {task.isRunning ? <Pause size={16} /> : <Play size={16} />}
+        </button>
+        <span className={styles.taskDuration}>
+          {formatTime(task.duration || 0)}
+        </span>
+      </div>
+    );
 
-  const cancelAddTask = () => {
-    setNewTask({ name: "", project: "General" });
-    setIsAddingTask(false);
+    if (viewMode === "timeline") {
+      return (
+        <div key={task.id} className={`${styles.timelineItem} ${task.isRunning ? styles.activeTask : ''}`}>
+          <div className={styles.timelinePoint} />
+          <div className={styles.timelineContent}>
+            <div className={styles.timelineHeader}>
+              <h4 className={styles.timelineTaskName}>{task.name}</h4>
+              {taskControls}
+            </div>
+            <p className={styles.timelineTaskProject}>{task.project}</p>
+            <span className={styles.timelineTime}>
+              {new Date(task.startTime).toLocaleTimeString()}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    if (viewMode === "list") {
+      return (
+        <div key={task.id} className={`${styles.listItem} ${task.isRunning ? styles.activeTask : ''}`}>
+          <div className={styles.listItemContent}>
+            <h4 className={styles.listItemName}>{task.name}</h4>
+            <p className={styles.listItemProject}>{task.project}</p>
+          </div>
+          {taskControls}
+        </div>
+      );
+    }
+
+    return (
+      <div key={task.id} className={`${styles.gridItem} ${task.isRunning ? styles.activeTask : ''}`}>
+        <div className={styles.gridItemIcon}>
+          <Activity size={24} />
+        </div>
+        <h4 className={styles.gridItemName}>{task.name}</h4>
+        <p className={styles.gridItemProject}>{task.project}</p>
+        <div className={styles.gridItemFooter}>
+          <span className={styles.gridItemTime}>
+            {new Date(task.startTime).toLocaleTimeString()}
+          </span>
+          {taskControls}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -153,14 +252,13 @@ const Timer = () => {
         {/* Header */}
         <div className={styles.timerHeader}>
           <div className={styles.headerOverlay} />
-
           <div className={styles.headerContent}>
             <div className={styles.headerTitle}>
               <Clock size={32} />
-              <h1 className={styles.titleText}>Time Tracker</h1>
+              <h1 className={styles.titleText}>Shift Timer</h1>
             </div>
             <p className={styles.titleSubtext}>
-              Track your time, boost your productivity
+              Track your shifts and tasks efficiently
             </p>
           </div>
         </div>
@@ -169,22 +267,76 @@ const Timer = () => {
         <div className={styles.timerSection}>
           <div className={styles.timerDisplay}>{formatTime(currentTime)}</div>
 
-          {/* Task Input */}
-          <div className={styles.taskSection}>
-            {!isAddingTask ? (
-              <div>
-                {currentTask ? (
-                  <div className={styles.currentTask}>
-                    <span className={styles.taskName}>{currentTask}</span>
-                    <span className={styles.taskProject}>{currentProject}</span>
+          {/* Timer Controls */}
+          <div className={styles.timerControls}>
+            {!isRunning ? (
+              <button
+                onClick={currentShift ? pauseShift : startShift}
+                className={`${styles.controlButton} ${styles.startButton}`}
+              >
+                <Play size={24} />
+                {currentShift ? "Resume Shift" : "Start Shift"}
+              </button>
+            ) : (
+              <button
+                onClick={pauseShift}
+                className={`${styles.controlButton} ${styles.pauseButton}`}
+              >
+                <Pause size={24} />
+                Pause Shift
+              </button>
+            )}
+
+            {currentShift && (
+              <button
+                onClick={endShift}
+                className={`${styles.controlButton} ${styles.stopButton}`}
+              >
+                <Square size={24} />
+                End Shift
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* View Mode Selector */}
+        {currentShift && (
+          <div className={styles.viewModeSelector}>
+            <button
+              className={`${styles.viewModeButton} ${
+                viewMode === "timeline" ? styles.active : ""
+              }`}
+              onClick={() => setViewMode("timeline")}
+            >
+              <AlignLeft size={20} />
+              Timeline
+            </button>
+            <button
+              className={`${styles.viewModeButton} ${
+                viewMode === "list" ? styles.active : ""
+              }`}
+              onClick={() => setViewMode("list")}
+            >
+              <List size={20} />
+              List
+            </button>
                     <button
-                      onClick={() => setIsAddingTask(true)}
-                      className={styles.editTaskButton}
+              className={`${styles.viewModeButton} ${
+                viewMode === "grid" ? styles.active : ""
+              }`}
+              onClick={() => setViewMode("grid")}
                     >
-                      <Edit2 size={16} />
+              <LayoutGrid size={20} />
+              Grid
                     </button>
                   </div>
-                ) : (
+        )}
+
+        {/* Tasks Section */}
+        {currentShift && (
+          <div className={styles.tasksSection}>
+            <div className={styles.tasksSectionHeader}>
+              <h2 className={styles.sectionTitle}>Current Shift Tasks</h2>
                   <button
                     onClick={() => setIsAddingTask(true)}
                     className={styles.addTaskButton}
@@ -192,9 +344,10 @@ const Timer = () => {
                     <Plus size={20} />
                     Add Task
                   </button>
-                )}
               </div>
-            ) : (
+
+            {/* Task Input Form */}
+            {isAddingTask && (
               <div className={styles.taskForm}>
                 <input
                   type="text"
@@ -220,12 +373,12 @@ const Timer = () => {
                   ))}
                 </select>
                 <div className={styles.taskFormActions}>
-                  <button onClick={addTask} className={styles.saveTaskButton}>
+                  <button onClick={addTaskToShift} className={styles.saveTaskButton}>
                     <Save size={16} />
                     Save
                   </button>
                   <button
-                    onClick={cancelAddTask}
+                    onClick={() => setIsAddingTask(false)}
                     className={styles.cancelTaskButton}
                   >
                     <X size={16} />
@@ -234,43 +387,92 @@ const Timer = () => {
                 </div>
               </div>
             )}
+
+            {/* Tasks Timeline/List/Grid View */}
+            <div className={styles.tasksView}>
+              {viewMode === "timeline" && (
+                <div className={styles.timelineView}>
+                  {shiftTasks.map(renderTaskItem)}
+                </div>
+              )}
+
+              {viewMode === "list" && (
+                <div className={styles.listView}>
+                  {shiftTasks.map(renderTaskItem)}
+                </div>
+              )}
+
+              {viewMode === "grid" && (
+                <div className={styles.gridView}>
+                  {shiftTasks.map(renderTaskItem)}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Shift End Modal */}
+        {isShiftEndModalOpen && (
+          <div className={styles.modal}>
+            <div className={styles.modalContent}>
+              <h2 className={styles.modalTitle}>Shift Summary</h2>
+              <div className={styles.modalBody}>
+                <div className={styles.summaryStats}>
+                  <div className={styles.summaryStat}>
+                    <Clock size={20} />
+                    <div className={styles.summaryStatContent}>
+                      <span className={styles.summaryStatLabel}>Total Time</span>
+                      <span className={styles.summaryStatValue}>
+                        {formatTime(currentTime)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className={styles.summaryStat}>
+                    <Target size={20} />
+                    <div className={styles.summaryStatContent}>
+                      <span className={styles.summaryStatLabel}>Tasks</span>
+                      <span className={styles.summaryStatValue}>
+                        {shiftTasks.length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.summaryTasks}>
+                  <h3 className={styles.summaryTasksTitle}>Tasks Overview</h3>
+                  {shiftTasks.map((task) => (
+                    <div key={task.id} className={styles.summaryTask}>
+                      <div className={styles.summaryTaskInfo}>
+                        <h4 className={styles.summaryTaskName}>{task.name}</h4>
+                        <p className={styles.summaryTaskProject}>{task.project}</p>
+                      </div>
+                      <div className={styles.summaryTaskTime}>
+                        {formatTime(task.duration || 0)}
+                      </div>
+                    </div>
+                  ))}
           </div>
 
-          {/* Timer Controls */}
-          <div className={styles.timerControls}>
-            {!isRunning ? (
+                <div className={styles.modalActions}>
               <button
-                onClick={startTimer}
-                disabled={!currentTask.trim()}
-                className={`${styles.controlButton} ${styles.startButton} ${
-                  !currentTask.trim() ? styles.disabled : ""
-                }`}
+                    onClick={finalizeShift}
+                    className={styles.finishShiftButton}
               >
-                <Play size={24} />
-                Start
+                    <Save size={20} />
+                    Save & Finish Shift
               </button>
-            ) : (
               <button
-                onClick={pauseTimer}
-                className={`${styles.controlButton} ${styles.pauseButton}`}
+                    onClick={() => setIsShiftEndModalOpen(false)}
+                    className={styles.cancelButton}
               >
-                <Pause size={24} />
-                Pause
-              </button>
-            )}
-
-            <button
-              onClick={stopTimer}
-              disabled={currentTime === 0}
-              className={`${styles.controlButton} ${styles.stopButton} ${
-                currentTime === 0 ? styles.disabled : ""
-              }`}
-            >
-              <Square size={24} />
-              Stop
+                    <X size={20} />
+                    Continue Shift
             </button>
           </div>
         </div>
+            </div>
+          </div>
+        )}
 
         {/* Today's Stats */}
         <div className={styles.statsGrid}>
@@ -292,7 +494,7 @@ const Timer = () => {
             </div>
             <div className={styles.statContent}>
               <h3 className={styles.statValue}>{todayStats.sessions}</h3>
-              <p className={styles.statLabel}>Sessions</p>
+              <p className={styles.statLabel}>Shifts</p>
             </div>
           </div>
 
@@ -321,8 +523,7 @@ const Timer = () => {
 
         {/* Recent Sessions */}
         <div className={styles.sessionsSection}>
-          <h2 className={styles.sectionTitle}>Recent Sessions</h2>
-
+          <h2 className={styles.sectionTitle}>Recent Shifts</h2>
           <div className={styles.sessionsList}>
             {recentSessions.map((session) => (
               <div key={session.id} className={styles.sessionItem}>

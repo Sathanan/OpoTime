@@ -106,8 +106,144 @@
 
 .viewControls {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+  background: var(--bg-secondary);
+  padding: 0.35rem;
+  border-radius: var(--border-radius);
+  gap: 0.35rem;
+  margin: 0 1rem;
+  position: relative;
+  z-index: 1;
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.viewButton {
+  padding: 0.75rem 1.75rem;
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--border-radius) - 4px);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.4s var(--transition-speed);
+  font-size: 0.95rem;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+}
+
+.viewButton:hover {
+  color: var(--text-primary);
+}
+
+.viewButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gradient);
+  border-radius: calc(var(--border-radius) - 4px);
+  opacity: 0;
+  transform: scale(0.8) translateY(10%);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
+}
+
+.viewButton.active {
+  color: var(--bg-primary);
+  font-weight: 600;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-light);
+}
+
+.viewButton.active::before {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.viewButton:not(.active):hover {
+  background: var(--bg-hover);
+  transform: translateY(-1px);
+}
+
+/* Glass effect on hover */
+.viewControls:hover {
+  box-shadow: var(--shadow-hover);
+  border-color: var(--accent-color);
+  background: color-mix(in srgb, var(--bg-secondary) 95%, var(--accent-color) 5%);
+}
+
+/* Scale animation on button click */
+.viewButton:active {
+  transform: scale(0.97);
+}
+
+/* Glowing effect for active button */
+.viewButton.active::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: var(--gradient);
+  border-radius: calc(var(--border-radius) - 2px);
+  z-index: -2;
+  opacity: 0.15;
+  filter: blur(8px);
+  animation: glowPulse 3s infinite;
+}
+
+@keyframes glowPulse {
+  0% {
+    opacity: 0.15;
+    transform: scale(1);
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 0.25;
+    transform: scale(1.02);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 0.15;
+    transform: scale(1);
+    filter: blur(8px);
+  }
+}
+
+/* Dark mode specific adjustments */
+[data-theme="dark"] .viewControls {
+  background: color-mix(in srgb, var(--bg-secondary) 97%, var(--accent-color) 3%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .viewButton:not(.active):hover {
+  background: var(--bg-hover);
+}
+
+[data-theme="dark"] .viewControls:hover {
+  background: color-mix(in srgb, var(--bg-secondary) 90%, var(--accent-color) 10%);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .viewControls {
+    margin: 0.75rem 0;
+    width: 100%;
+    padding: 0.3rem;
+  }
+
+  .viewButton {
+    flex: 1;
+    padding: 0.7rem 0.5rem;
+    font-size: 0.9rem;
+    letter-spacing: 0.2px;
+  }
 }
 
 .searchBox,
@@ -774,6 +910,22 @@
   .daysGrid {
     min-height: 500px;
   }
+
+  .weekGrid {
+    grid-template-columns: 50px repeat(7, 1fr);
+  }
+
+  .dayViewGrid {
+    grid-template-columns: 50px 1fr;
+  }
+
+  .timeSlot {
+    font-size: 0.7rem;
+  }
+
+  .weekEvent {
+    font-size: 0.7rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -797,7 +949,14 @@
   }
 
   .viewControls {
-    flex-direction: column;
+    margin: 0.5rem 0;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .viewButton {
+    flex: 1;
+    text-align: center;
   }
 
   .searchInput,
@@ -862,6 +1021,28 @@
 
   .advancedSearchGrid {
     grid-template-columns: 1fr;
+  }
+
+  .weekGrid {
+    grid-template-columns: 40px repeat(7, 1fr);
+  }
+
+  .dayViewGrid {
+    grid-template-columns: 40px 1fr;
+  }
+
+  .dayColumn {
+    min-width: unset;
+  }
+
+  .weekEvent {
+    font-size: 0.6rem;
+    padding: 0.1rem;
+  }
+
+  .dayEvent {
+    font-size: 0.8rem;
+    padding: 0.25rem;
   }
 }
 
@@ -1292,3 +1473,118 @@
     align-self: flex-end;
   }
 }
+
+/* Week View Styles */
+.weekGrid {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  background: var(--bg-secondary);
+}
+
+.timeColumn {
+  background: var(--bg-tertiary);
+  border-right: 1px solid var(--border-color);
+  z-index: 1;
+}
+
+.timeSlot {
+  height: 60px;
+  padding: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dayColumn {
+  border-right: 1px solid var(--border-color);
+  min-width: 120px;
+}
+
+.dayHeader {
+  height: 30px;
+  padding: 0.5rem;
+  text-align: center;
+  font-weight: 500;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.dayContent {
+  position: relative;
+}
+
+.hourSlot {
+  height: 60px;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.25rem;
+  cursor: pointer;
+  position: relative;
+}
+
+.hourSlot:hover {
+  background: var(--hover-color);
+}
+
+.weekEvent {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.8rem;
+  color: white;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.weekEvent:hover {
+  filter: brightness(1.1);
+}
+
+/* Day View Styles */
+.dayViewGrid {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  background: var(--bg-secondary);
+}
+
+.dayViewContent {
+  position: relative;
+  min-width: 200px;
+}
+
+.dayEvent {
+  position: relative;
+  margin: 0.25rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.9rem;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dayEvent:hover {
+  filter: brightness(1.1);
+}
+
+.eventTime {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+

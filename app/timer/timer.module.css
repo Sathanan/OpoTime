@@ -84,45 +84,62 @@
   font-family: monospace;
 }
 
-/* Task section styles */
-.taskSection {
+/* View Mode Selector */
+.viewModeSelector {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
-.currentTask {
+.viewModeButton {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.taskName {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.taskProject {
-  font-size: 14px;
-  color: white;
-  padding: 4px 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  gap: 8px;
+  padding: 12px 20px;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-}
-
-.editTaskButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  background: var(--bg-secondary);
   color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.editTaskButton:hover {
+.viewModeButton:hover {
   background: var(--bg-hover);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.viewModeButton.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+/* Tasks Section */
+.tasksSection {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border-color);
+}
+
+.tasksSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
   color: var(--text-primary);
 }
 
@@ -130,53 +147,71 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 auto 16px;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
   border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: 500;
   transition: all 0.3s ease;
 }
 
 .addTaskButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
 }
 
+/* Task Form */
 .taskForm {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 400px;
-  margin: 0 auto 16px;
-}
-
-.taskInput,
-.projectSelect {
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  font-size: 16px;
-  outline: none;
-  transition: all 0.3s ease;
   background: var(--bg-primary);
-  color: var(--text-primary);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border-color);
 }
 
-.taskInput:focus,
+.taskInput {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.taskInput:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.projectSelect {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
 .projectSelect:focus {
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
 .taskFormActions {
   display: flex;
-  gap: 8px;
-  justify-content: center;
+  gap: 12px;
 }
 
 .saveTaskButton {
@@ -195,7 +230,7 @@
 
 .saveTaskButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
 }
 
 .cancelTaskButton {
@@ -217,7 +252,348 @@
   color: var(--text-primary);
 }
 
-/* Timer controls styles */
+/* Timeline View */
+.timelineView {
+  position: relative;
+  padding-left: 32px;
+}
+
+.timelineItem {
+  position: relative;
+  padding-bottom: 32px;
+}
+
+.timelinePoint {
+  position: absolute;
+  left: -32px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #667eea;
+  border: 2px solid var(--bg-primary);
+  z-index: 1;
+}
+
+.timelineItem::before {
+  content: '';
+  position: absolute;
+  left: -27px;
+  top: 12px;
+  bottom: -20px;
+  width: 2px;
+  background: var(--border-color);
+}
+
+.timelineItem:last-child::before {
+  display: none;
+}
+
+.timelineContent {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  margin-left: 16px;
+  transition: all 0.3s ease;
+}
+
+.timelineContent:hover {
+  transform: translateX(8px);
+  border-color: #667eea;
+}
+
+.timelineTaskName {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.timelineTaskProject {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+}
+
+.timelineTime {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+/* List View */
+.listView {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.listItem:hover {
+  transform: translateX(8px);
+  border-color: #667eea;
+}
+
+.listItemContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.listItemName {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.listItemProject {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.listItemTime {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+/* Grid View */
+.gridView {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.gridItem {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.gridItem:hover {
+  transform: translateY(-4px);
+  border-color: #667eea;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+.gridItemIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.gridItemName {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.gridItemProject {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 12px 0;
+}
+
+.gridItemTime {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+  backdrop-filter: blur(8px);
+}
+
+.modalContent {
+  background: var(--bg-secondary);
+  border-radius: 24px;
+  padding: 32px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalTitle {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 24px 0;
+  color: var(--text-primary);
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.summaryStats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.summaryStat {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-primary);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.summaryStatContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summaryStatLabel {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.summaryStatValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.summaryTasks {
+  background: var(--bg-primary);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.summaryTasksTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+}
+
+.summaryTask {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.summaryTask:last-child {
+  border-bottom: none;
+}
+
+.summaryTaskInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summaryTaskName {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.summaryTaskProject {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.summaryTaskTime {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.modalActions {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.finishShiftButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.finishShiftButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.cancelButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancelButton:hover {
+  background: var(--bg-hover);
+}
+
+/* Timer Controls */
 .timerControls {
   display: flex;
   gap: 16px;
@@ -266,12 +642,13 @@
 }
 
 .disabled {
-  background: #d1d5db !important;
-  cursor: not-allowed !important;
+  opacity: 0.5;
+  cursor: not-allowed;
   transform: none !important;
+  box-shadow: none !important;
 }
 
-/* Stats grid styles */
+/* Stats Grid */
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -339,20 +716,12 @@
   color: var(--text-secondary);
 }
 
-/* Sessions section styles */
+/* Sessions Section */
 .sessionsSection {
   background: var(--bg-secondary);
   border-radius: 16px;
   padding: 24px;
   border: 1px solid var(--border-color);
-}
-
-.sectionTitle {
-  font-size: 20px;
-  font-weight: 600;
-  margin-top: 0;
-  margin-bottom: 24px;
-  color: var(--text-primary);
 }
 
 .sessionsList {
@@ -418,7 +787,7 @@
   color: var(--text-primary);
 }
 
-/* Responsive styles */
+/* Responsive Styles */
 @media (max-width: 768px) {
   .timerContainer {
     padding: 16px;
@@ -439,17 +808,28 @@
 
   .controlButton {
     width: 100%;
-    max-width: 200px;
+    max-width: 300px;
   }
 
-  .statsGrid {
-    grid-template-columns: 1fr 1fr;
+  .viewModeSelector {
+    flex-wrap: wrap;
   }
 
-  .sessionLeft {
+  .viewModeButton {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .summaryStats {
+    grid-template-columns: 1fr;
+  }
+
+  .modalContent {
+    padding: 24px;
+  }
+
+  .modalActions {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
   }
 }
 
@@ -458,11 +838,144 @@
     grid-template-columns: 1fr;
   }
 
-  .taskForm {
-    max-width: 100%;
+  .gridView {
+    grid-template-columns: 1fr;
   }
 
   .timerDisplay {
     font-size: 28px;
+  }
+
+  .viewModeButton {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.timelineItem {
+  animation: slideIn 0.3s ease forwards;
+}
+
+.gridItem {
+  animation: slideIn 0.3s ease forwards;
+}
+
+.listItem {
+  animation: slideIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.modalContent {
+  animation: slideIn 0.3s ease forwards;
+}
+
+/* Task Controls */
+.taskControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.taskControlButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.taskControlButton:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  transform: scale(1.05);
+}
+
+.taskControlButton.running {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.taskDuration {
+  font-family: monospace;
+  font-size: 14px;
+  color: var(--text-secondary);
+  min-width: 80px;
+  text-align: right;
+}
+
+/* Active Task States */
+.activeTask {
+  border-color: #10b981 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
+}
+
+.activeTask .timelinePoint {
+  background: #10b981;
+  animation: pulse 2s infinite;
+}
+
+.activeTask .gridItemIcon {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  animation: pulse 2s infinite;
+}
+
+/* Timeline Specific */
+.timelineHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* Grid Specific */
+.gridItemFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Pulse Animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
   }
 }

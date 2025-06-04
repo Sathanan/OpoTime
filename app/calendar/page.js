@@ -201,10 +201,74 @@ const Calendar = () => {
     }));
   };
 
-  const navigateMonth = (direction) => {
+  const getDaysInWeek = (date) => {
+    const start = new Date(date);
+    const day = start.getDay();
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is sunday
+    start.setDate(diff);
+    
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      days.push(new Date(start));
+      start.setDate(start.getDate() + 1);
+    }
+    return days;
+  };
+
+  const getHoursInDay = () => {
+    const hours = [];
+    for (let i = 0; i < 24; i++) {
+      hours.push(i);
+    }
+    return hours;
+  };
+
+  const getEventsForHour = (date, hour) => {
+    return events.filter(event => {
+      const eventDate = new Date(event.date);
+      return eventDate.toDateString() === date.toDateString() && 
+             eventDate.getHours() === hour;
+    });
+  };
+
+  const navigateDate = (direction) => {
     const newDate = new Date(currentDate);
-    newDate.setMonth(currentDate.getMonth() + direction);
+    switch (viewMode) {
+      case 'month':
+        newDate.setMonth(currentDate.getMonth() + direction);
+        break;
+      case 'week':
+        newDate.setDate(currentDate.getDate() + (7 * direction));
+        break;
+      case 'day':
+        newDate.setDate(currentDate.getDate() + direction);
+        break;
+    }
     setCurrentDate(newDate);
+  };
+
+  const formatDateRange = () => {
+    switch (viewMode) {
+      case 'month':
+        return `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+      case 'week': {
+        const weekDays = getDaysInWeek(currentDate);
+        const firstDay = weekDays[0];
+        const lastDay = weekDays[6];
+        if (firstDay.getMonth() === lastDay.getMonth()) {
+          return `${firstDay.getDate()}. - ${lastDay.getDate()}. ${months[firstDay.getMonth()]} ${firstDay.getFullYear()}`;
+        } else {
+          return `${firstDay.getDate()}. ${months[firstDay.getMonth()]} - ${lastDay.getDate()}. ${months[lastDay.getMonth()]} ${firstDay.getFullYear()}`;
+        }
+      }
+      case 'day':
+        return currentDate.toLocaleDateString('de-DE', { 
+          weekday: 'long', 
+          day: 'numeric', 
+          month: 'long', 
+          year: 'numeric' 
+        });
+    }
   };
 
   const openEventDetails = (event) => {
@@ -287,18 +351,39 @@ const Calendar = () => {
           <div className={styles.navigationControls}>
             <button 
               className={styles.navButton}
-              onClick={() => navigateMonth(-1)}
+              onClick={() => navigateDate(-1)}
             >
               <ChevronLeft size={18} />
             </button>
             <h2 className={styles.currentMonth}>
-              {months[currentDate.getMonth()]} {currentDate.getFullYear()}
+              {formatDateRange()}
             </h2>
             <button 
               className={styles.navButton}
-              onClick={() => navigateMonth(1)}
+              onClick={() => navigateDate(1)}
             >
               <ChevronRight size={18} />
+            </button>
+          </div>
+
+          <div className={styles.viewControls}>
+            <button
+              className={`${styles.viewButton} ${viewMode === 'month' ? styles.active : ''}`}
+              onClick={() => setViewMode('month')}
+            >
+              Monat
+            </button>
+            <button
+              className={`${styles.viewButton} ${viewMode === 'week' ? styles.active : ''}`}
+              onClick={() => setViewMode('week')}
+            >
+              Woche
+            </button>
+            <button
+              className={`${styles.viewButton} ${viewMode === 'day' ? styles.active : ''}`}
+              onClick={() => setViewMode('day')}
+            >
+              Tag
             </button>
           </div>
 
@@ -506,48 +591,154 @@ const Calendar = () => {
                 ))}
               </div>
 
-              <div className={styles.daysGrid}>
-                {getDaysInMonth(currentDate).map((date, index) => {
-                  const dayEvents = getEventsForDate(date);
-                  
-                  return (
-                    <div
-                      key={index}
-                      className={`${styles.dayCell} ${
-                        !isCurrentMonth(date) ? styles.otherMonth : ''
-                      } ${isToday(date) ? styles.today : ''} ${
-                        isSelectedDate(date) ? styles.selected : ''
+              {viewMode === 'month' && (
+                <div className={styles.daysGrid}>
+                  {getDaysInMonth(currentDate).map((date, index) => {
+                    const dayEvents = getEventsForDate(date);
+                    
+                    return (
+                      <div
+                        key={index}
+                        className={`${styles.dayCell} ${
+                          !isCurrentMonth(date) ? styles.otherMonth : ''
+                        } ${isToday(date) ? styles.today : ''} ${
+                          isSelectedDate(date) ? styles.selected : ''
+                        }`}
+                        onClick={() => setSelectedDate(date)}
+                      >
+                        <div className={styles.dayNumber}>
+                          {date.getDate()}
+                        </div>
+                        <div className={styles.dayEvents}>
+                          {dayEvents.slice(0, 3).map(event => (
+                            <div
+                              key={event.id}
+                              className={styles.eventDot}
+                              style={{ backgroundColor: event.color }}
+                              title={event.title}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEventDetails(event);
+                              }}
+                            >
+                              <span className={styles.eventTitle}>{event.title}</span>
+                            </div>
+                          ))}
+                          {dayEvents.length > 3 && (
+                            <div className={styles.moreEvents}>
+                              +{dayEvents.length - 3} mehr
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {viewMode === 'week' && (
+                <div className={styles.weekGrid}>
+                  <div className={styles.timeColumn}>
+                    {getHoursInDay().map(hour => (
+                      <div key={hour} className={styles.timeSlot}>
+                        {`${hour.toString().padStart(2, '0')}:00`}
+                      </div>
+                    ))}
+                  </div>
+                  {getDaysInWeek(currentDate).map((date, dayIndex) => (
+                    <div 
+                      key={dayIndex} 
+                      className={`${styles.dayColumn} ${
+                        isToday(date) ? styles.today : ''
                       }`}
-                      onClick={() => setSelectedDate(date)}
                     >
-                      <div className={styles.dayNumber}>
+                      <div className={styles.dayHeader}>
                         {date.getDate()}
                       </div>
-                      <div className={styles.dayEvents}>
-                        {dayEvents.slice(0, 3).map(event => (
-                          <div
-                            key={event.id}
-                            className={styles.eventDot}
-                            style={{ backgroundColor: event.color }}
-                            title={event.title}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEventDetails(event);
-                            }}
-                          >
-                            <span className={styles.eventTitle}>{event.title}</span>
-                          </div>
-                        ))}
-                        {dayEvents.length > 3 && (
-                          <div className={styles.moreEvents}>
-                            +{dayEvents.length - 3} mehr
-                          </div>
-                        )}
+                      <div className={styles.dayContent}>
+                        {getHoursInDay().map(hour => {
+                          const hourEvents = getEventsForHour(date, hour);
+                          return (
+                            <div 
+                              key={hour} 
+                              className={styles.hourSlot}
+                              onClick={() => {
+                                const newDate = new Date(date);
+                                newDate.setHours(hour);
+                                setSelectedDate(newDate);
+                                handleAddEventClick();
+                              }}
+                            >
+                              {hourEvents.map(event => (
+                                <div
+                                  key={event.id}
+                                  className={styles.weekEvent}
+                                  style={{ backgroundColor: event.color }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEventDetails(event);
+                                  }}
+                                >
+                                  {event.title}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
+
+              {viewMode === 'day' && (
+                <div className={styles.dayViewGrid}>
+                  <div className={styles.timeColumn}>
+                    {getHoursInDay().map(hour => (
+                      <div key={hour} className={styles.timeSlot}>
+                        {`${hour.toString().padStart(2, '0')}:00`}
+                      </div>
+                    ))}
+                  </div>
+                  <div className={styles.dayViewContent}>
+                    {getHoursInDay().map(hour => {
+                      const hourEvents = getEventsForHour(currentDate, hour);
+                      return (
+                        <div 
+                          key={hour} 
+                          className={styles.hourSlot}
+                          onClick={() => {
+                            const newDate = new Date(currentDate);
+                            newDate.setHours(hour);
+                            setSelectedDate(newDate);
+                            handleAddEventClick();
+                          }}
+                        >
+                          {hourEvents.map(event => (
+                            <div
+                              key={event.id}
+                              className={styles.dayEvent}
+                              style={{ backgroundColor: event.color }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEventDetails(event);
+                              }}
+                            >
+                              <span className={styles.eventTime}>
+                                {event.date.toLocaleTimeString('de-DE', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                              <span className={styles.eventTitle}>{event.title}</span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className={styles.eventsPanel}>
