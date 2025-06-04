@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   Edit2,
@@ -11,94 +11,255 @@ import {
   Circle,
   Calendar,
   Clock,
-  Tag,
-  Filter,
   Search,
   Target,
   Activity,
   AlertCircle,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import styles from "./tasks.module.css";
 import {
   getAllTask,
   getAllTaskByProject,
-  getTaskByID,
   getTaskByPriority,
   createTask,
   updateTask,
   deleteTask as deleteTaskApi,
 } from "../services/taskService.js";
 import { getAllProjects } from "../services/projectService.js";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
+const TASK_STATUSES = {
+  new: "To Do",
+  in_progress: "In Progress",
+  completed: "Completed"
+};
+
+const PRIORITIES = [
+  { value: "low", label: "Low", color: "#10b981" },
+  { value: "medium", label: "Medium", color: "#f59e0b" },
+  { value: "high", label: "High", color: "#ef4444" },
+];
 
 export default function Tasks() {
+  // Core states
   const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState(null);
+
+  // UI states
+  const [viewMode, setViewMode] = useState("list");
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
-  const [filter, setFilter] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [projects, setProjects] = useState([]); // Changed from ["General"] to empty array
-  const [selectedProject, setSelectedProject] = useState("");
-  const [selectedPriority, setSelectedPriority] = useState("all");
   const [editingTaskData, setEditingTaskData] = useState(null);
 
+  // Filter states
+  const [filter, setFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProject, setSelectedProject] = useState("");
+  const [selectedPriority, setSelectedPriority] = useState("all");
+
+  // Form state
   const [newTask, setNewTask] = useState({
     name: "",
     project: "",
     priority: "medium",
     status: "new",
     dueDate: "",
-    estimatedTime: 3600, // 1 hour in seconds
+    estimatedTime: 3600,
   });
 
-  const priorities = [
-    { value: "low", label: "Low", color: "#10b981" },
-    { value: "medium", label: "Medium", color: "#f59e0b" },
-    { value: "high", label: "High", color: "#ef4444" },
-  ];
+  // Fetch data
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
-  // Fetch tasks and projects on component mount
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setIsLoading(true);
-        let tasksData;
-        const projectsData = await getAllProjects();
+      const [tasksData, projectsData] = await Promise.all([
+        selectedProject ? getAllTaskByProject(selectedProject) :
+        selectedPriority !== "all" ? getTaskByPriority(selectedPriority) :
+        getAllTask(),
+        getAllProjects()
+      ]);
 
-        if (selectedProject) {
-          tasksData = await getAllTaskByProject(selectedProject);
-        } else if (selectedPriority !== "all") {
-          tasksData = await getTaskByPriority(selectedPriority);
-        } else {
-          tasksData = await getAllTask();
-        }
-
-        if (Array.isArray(tasksData)) {
-          setTasks(tasksData);
-        } else if (tasksData && typeof tasksData === "object") {
-          setTasks([tasksData]);
-        } else {
-          setTasks([]);
-        }
-
-        if (Array.isArray(projectsData)) {
-          setProjects(projectsData);
-        } else if (projectsData && typeof projectsData === "object") {
-          setProjects([projectsData]);
-        } else {
-          setProjects([]);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setTasks([]);
-        setProjects([]);
-      } finally {
-        setIsLoading(false);
-      }
+      setTasks(Array.isArray(tasksData) ? tasksData : tasksData ? [tasksData] : []);
+      setProjects(Array.isArray(projectsData) ? projectsData : projectsData ? [projectsData] : []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setError("Failed to load tasks. Please try again later.");
+      setTasks([]);
+      setProjects([]);
+    } finally {
+      setIsLoading(false);
     }
-
-    fetchData();
   }, [selectedProject, selectedPriority]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Task operations
+  const handleAddTask = async () => {
+    if (!newTask.name.trim()) return;
+
+    try {
+      setIsLoading(true);
+      const createdTask = await createTask(
+        newTask.project || null,
+        newTask.status,
+        newTask.name,
+        newTask.priority,
+        newTask.dueDate || null,
+        newTask.estimatedTime || 0
+      );
+
+      if (createdTask) {
+        setTasks(prev => [...prev, createdTask]);
+        setIsAddingTask(false);
+        resetNewTaskForm();
+      }
+    } catch (error) {
+      console.error("Error creating task:", error);
+      setError("Failed to create task. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateTask = async () => {
+    if (!editingTaskData || !editingTask) return;
+
+    try {
+      setIsLoading(true);
+      const result = await updateTask(
+        editingTask,
+        editingTaskData.status,
+        editingTaskData.name,
+        editingTaskData.priority,
+        editingTaskData.due_date,
+        editingTaskData.progress
+      );
+
+      if (result) {
+        setTasks(prev => prev.map(task =>
+          task.id === editingTask ? {
+            ...task,
+            text: editingTaskData.name,
+            status: editingTaskData.status,
+            priority: editingTaskData.priority,
+            project: editingTaskData.project,
+            due_date: editingTaskData.due_date,
+            progress: editingTaskData.progress
+          } : task
+        ));
+        setEditingTask(null);
+        setEditingTaskData(null);
+      }
+    } catch (error) {
+      console.error("Error updating task:", error);
+      setError("Failed to update task. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
+
+    try {
+      setIsLoading(true);
+      const result = await deleteTaskApi(taskId);
+      if (result) {
+        setTasks(prev => prev.filter(task => task.id !== taskId));
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      setError("Failed to delete task. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Optimistic update helper
+  const updateTaskOptimistically = (taskId, updates) => {
+    setTasks(prev => prev.map(task =>
+      task.id === taskId ? { ...task, ...updates } : task
+    ));
+  };
+
+  // Update the handleDragEnd function
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const { draggableId, destination } = result;
+    const taskId = parseInt(draggableId);
+    const newStatus = destination.droppableId;
+    const task = tasks.find(t => t.id === taskId);
+
+    if (!task) return;
+
+    // Optimistically update the UI
+    updateTaskOptimistically(taskId, { status: newStatus });
+
+    try {
+      setIsUpdating(true);
+      const result = await updateTask(
+        taskId,
+        newStatus,
+        task.text,
+        task.priority,
+        task.due_date,
+        task.progress
+      );
+
+      if (!result) {
+        // Revert the optimistic update if the API call fails
+        updateTaskOptimistically(taskId, { status: task.status });
+        setError("Failed to update task status. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error updating task status:", error);
+      // Revert the optimistic update
+      updateTaskOptimistically(taskId, { status: task.status });
+      setError("Failed to update task status. Please try again.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Helper functions
+  const resetNewTaskForm = () => {
+    setNewTask({
+      name: "",
+      project: selectedProject || "",
+      priority: "medium",
+      status: "new",
+      dueDate: "",
+      estimatedTime: 3600,
+    });
+  };
+
+  const getTasksByStatus = () => {
+    const columns = Object.keys(TASK_STATUSES).reduce((acc, status) => {
+      acc[status] = {
+        title: TASK_STATUSES[status],
+        tasks: [],
+      };
+      return acc;
+    }, {});
+
+    filteredTasks.forEach(task => {
+      const status = task.status || "new";
+      if (columns[status]) {
+        columns[status].tasks.push(task);
+      }
+    });
+
+    return columns;
+  };
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -110,152 +271,77 @@ export default function Tasks() {
   };
 
   const getPriorityColor = (priority) => {
-    return priorities.find((p) => p.value === priority)?.color || "#10b981";
+    return PRIORITIES.find(p => p.value === priority)?.color || "#10b981";
   };
 
-  const startEditingTask = (task) => {
-    setEditingTaskData({
-      id: task.id,
-      text: task.text || "",
-      name: task.text || "",
-      status: task.status || "new",
-      priority: task.priority || "medium",
-      project: task.project || "",
-      due_date: task.due_date || "",
-      progress: task.progress || 0,
-      assigned_to: task.assigned_to
-    });
-    setEditingTask(task.id);
+  // Enhance the search functionality
+  const searchTask = (task, term) => {
+    if (!term) return true;
+    
+    const searchTerm = term.toLowerCase();
+    const project = projects.find(p => p.id === task.project);
+    const priorityLabel = PRIORITIES.find(p => p.value === task.priority)?.label;
+    const statusLabel = TASK_STATUSES[task.status || 'new'];
+    
+    // Format the date for searching if it exists
+    const formattedDate = task.due_date 
+      ? new Date(task.due_date).toLocaleDateString()
+      : '';
+
+    // Format estimated time for searching
+    const formattedTime = task.progress
+      ? formatTime(task.progress)
+      : '';
+
+    // Search in all task attributes
+    return (
+      // Task name/text
+      (task.text || '').toLowerCase().includes(searchTerm) ||
+      // Project name
+      (project?.name || '').toLowerCase().includes(searchTerm) ||
+      // Priority
+      (priorityLabel || '').toLowerCase().includes(searchTerm) ||
+      // Status
+      (statusLabel || '').toLowerCase().includes(searchTerm) ||
+      // Due date
+      formattedDate.toLowerCase().includes(searchTerm) ||
+      // Time
+      formattedTime.toLowerCase().includes(searchTerm) ||
+      // Priority level keywords
+      (searchTerm === 'high' && task.priority === 'high') ||
+      (searchTerm === 'medium' && task.priority === 'medium') ||
+      (searchTerm === 'low' && task.priority === 'low') ||
+      // Status keywords
+      (searchTerm === 'todo' && task.status === 'new') ||
+      (searchTerm === 'in progress' && task.status === 'in_progress') ||
+      (searchTerm === 'done' && task.status === 'completed') ||
+      // Special searches
+      (searchTerm === 'overdue' && task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed') ||
+      (searchTerm === 'today' && task.due_date && new Date(task.due_date).toDateString() === new Date().toDateString()) ||
+      (searchTerm === 'completed' && task.status === 'completed') ||
+      (searchTerm === 'pending' && task.status !== 'completed')
+    );
   };
 
-  const cancelEditTask = () => {
-    setEditingTask(null);
-    setEditingTaskData(null);
-  };
-
-  const saveEditedTask = async () => {
-    if (editingTaskData && editingTask) {
-      try {
-        const result = await updateTask(
-          editingTask,
-          editingTaskData.status || "new",
-          editingTaskData.name,
-          editingTaskData.priority || "medium",
-          editingTaskData.due_date || null,
-          editingTaskData.progress || 0
-        );
-
-        if (result) {
-          setTasks(tasks.map(task =>
-            task.id === editingTask ? {
-              ...task,
-              text: editingTaskData.name,
-              status: editingTaskData.status || "new",
-              priority: editingTaskData.priority || "medium",
-              project: editingTaskData.project,
-              due_date: editingTaskData.due_date,
-              progress: editingTaskData.progress || 0
-            } : task
-          ));
-          setEditingTask(null);
-          setEditingTaskData(null);
-        }
-      } catch (error) {
-        console.error("Error updating task:", error);
-      }
-    }
-  };
-
-  const filteredTasks = tasks.filter((task) => {
-    const matchesSearch =
-      (task.text || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (task.project && 
-       projects.find(p => p.id === task.project)?.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    const matchesFilter = 
-      filter === "all" ? true :
+  // Update the filtered tasks logic
+  const filteredTasks = tasks.filter(task => {
+    const matchesSearch = searchTask(task, searchTerm);
+    
+    const matchesFilter = filter === "all" ? true :
       filter === "completed" ? task.status === "completed" :
       filter === "pending" ? task.status !== "completed" :
-      filter === "overdue" ? (task.status !== "completed" && task.due_date && task.due_date < new Date().toISOString().split("T")[0]) :
+      filter === "overdue" ? (task.status !== "completed" && task.due_date && new Date(task.due_date) < new Date()) :
       true;
 
     return matchesSearch && matchesFilter;
   });
 
-  const toggleTaskCompletion = async (taskId) => {
-    try {
-      const taskToUpdate = tasks.find(task => task.id === taskId);
-      const newStatus = taskToUpdate.status === "completed" ? "todo" : "completed";
-      
-      const result = await updateTask(taskId, newStatus, taskToUpdate.text);
-      if (result) {
-        setTasks(tasks.map(task =>
-          task.id === taskId ? { ...task, status: newStatus } : task
-        ));
-      }
-    } catch (error) {
-      console.error("Error updating task:", error);
-    }
-  };
-
-  const deleteTask = async (taskId) => {
-    try {
-      const result = await deleteTaskApi(taskId);
-      if (result) {
-        setTasks(tasks.filter(task => task.id !== taskId));
-      }
-    } catch (error) {
-      console.error("Error deleting task:", error);
-    }
-  };
-
-  const addTask = async () => {
-    if (newTask.name.trim()) {
-      try {
-        const createdTask = await createTask(
-          newTask.project || null,
-          newTask.status,
-          newTask.name,
-          newTask.priority,       
-          newTask.dueDate || null,
-          newTask.estimatedTime || 0
-        );
-
-        if (createdTask) {
-          setTasks([...tasks, createdTask]);
-          setNewTask({
-            name: "",
-            project: selectedProject || "",
-            priority: "medium",  
-            status: "new",
-            dueDate: "",
-            estimatedTime: 3600,
-          });
-          setIsAddingTask(false);
-        }
-      } catch (error) {
-        console.error("Fehler beim Erstellen der Aufgabe:", error);
-      }
-    }
-  };
-
-  const cancelAddTask = () => {
-    setNewTask({
-      name: "",
-      project: selectedProject || "", // Reset to selected project or empty
-      priority: "medium",
-      status: "new",
-      dueDate: "",
-      estimatedTime: 3600,
-    });
-    setIsAddingTask(false);
-  };
-
+  // Stats calculation
   const getTaskStats = () => {
     const total = tasks.length;
-    const completed = tasks.filter((t) => t.status === "completed").length;
+    const completed = tasks.filter(t => t.status === "completed").length;
     const pending = total - completed;
-    const overdue = tasks.filter((t) => {
+    const overdue = tasks.filter(t => {
       const today = new Date().toISOString().split("T")[0];
       return t.status !== "completed" && t.due_date && t.due_date < today;
     }).length;
@@ -269,7 +355,23 @@ export default function Tasks() {
     return (
       <div className={styles.tasksCont}>
         <div className={styles.loadingState}>
+          <div className={styles.loadingSpinner} />
           <p>Loading tasks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.tasksCont}>
+        <div className={styles.errorState}>
+          <AlertCircle size={48} />
+          <h3>Error</h3>
+          <p>{error}</p>
+          <button onClick={fetchData} className={styles.retryButton}>
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -277,6 +379,7 @@ export default function Tasks() {
 
   return (
     <div className={styles.tasksCont}>
+      {isUpdating && <div className={styles.updateIndicator} />}
       <div className={styles.tasksContainer}>
         {/* Header */}
         <div className={styles.tasksHeader}>
@@ -294,7 +397,7 @@ export default function Tasks() {
 
         {/* Stats Grid */}
         <div className={styles.statsGrid}>
-          <div key="total" className={styles.statCard}>
+          <div className={styles.statCard}>
             <div className={`${styles.statIcon} ${styles.totalIcon}`}>
               <Activity size={24} />
             </div>
@@ -304,7 +407,7 @@ export default function Tasks() {
             </div>
           </div>
 
-          <div key="completed" className={styles.statCard}>
+          <div className={styles.statCard}>
             <div className={`${styles.statIcon} ${styles.completedIcon}`}>
               <CheckCircle size={24} />
             </div>
@@ -314,7 +417,7 @@ export default function Tasks() {
             </div>
           </div>
 
-          <div key="pending" className={styles.statCard}>
+          <div className={styles.statCard}>
             <div className={`${styles.statIcon} ${styles.pendingIcon}`}>
               <Clock size={24} />
             </div>
@@ -324,7 +427,7 @@ export default function Tasks() {
             </div>
           </div>
 
-          <div key="overdue" className={styles.statCard}>
+          <div className={styles.statCard}>
             <div className={`${styles.statIcon} ${styles.overdueIcon}`}>
               <AlertCircle size={24} />
             </div>
@@ -342,7 +445,7 @@ export default function Tasks() {
               <Search size={20} />
               <input
                 type="text"
-                placeholder="Search tasks..."
+                placeholder="Search by name, project, priority, status, date... (try: overdue, today, high, done)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className={styles.searchInput}
@@ -355,9 +458,9 @@ export default function Tasks() {
                 onChange={(e) => setSelectedProject(e.target.value)}
                 className={styles.filterSelect}
               >
-                <option key="all-projects" value="">All Projects</option>
+                <option value="">All Projects</option>
                 {projects.map((project) => (
-                  <option key={`project-${project.id}`} value={project.id}>
+                  <option key={project.id} value={project.id}>
                     {project.name}
                   </option>
                 ))}
@@ -368,9 +471,9 @@ export default function Tasks() {
                 onChange={(e) => setSelectedPriority(e.target.value)}
                 className={styles.filterSelect}
               >
-                <option key="all-priorities" value="all">All Priorities</option>
-                {priorities.map((priority) => (
-                  <option key={`priority-${priority.value}`} value={priority.value}>
+                <option value="all">All Priorities</option>
+                {PRIORITIES.map((priority) => (
+                  <option key={priority.value} value={priority.value}>
                     {priority.label}
                   </option>
                 ))}
@@ -384,7 +487,7 @@ export default function Tasks() {
                   { key: "overdue", label: "Overdue" },
                 ].map((filterOption) => (
                   <button
-                    key={`filter-${filterOption.key}`}
+                    key={filterOption.key}
                     onClick={() => setFilter(filterOption.key)}
                     className={`${styles.filterButton} ${
                       filter === filterOption.key ? styles.activeFilter : ""
@@ -400,10 +503,28 @@ export default function Tasks() {
           <button
             onClick={() => setIsAddingTask(true)}
             className={styles.addTaskButton}
+            disabled={isUpdating}
           >
             <Plus size={20} />
             Add Task
           </button>
+
+          <div className={styles.viewSwitcher}>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`${styles.viewButton} ${viewMode === "list" ? styles.activeView : ""}`}
+            >
+              <List size={20} />
+              List
+            </button>
+            <button
+              onClick={() => setViewMode("kanban")}
+              className={`${styles.viewButton} ${viewMode === "kanban" ? styles.activeView : ""}`}
+            >
+              <LayoutGrid size={20} />
+              Kanban
+            </button>
+          </div>
         </div>
 
         {/* Add Task Form */}
@@ -415,24 +536,19 @@ export default function Tasks() {
                 type="text"
                 placeholder="Task name..."
                 value={newTask.name}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, name: e.target.value })
-                }
+                onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
                 className={styles.taskInput}
                 autoFocus
               />
               
-              {/* Improved Project Select */}
               <select
                 value={newTask.project}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, project: e.target.value })
-                }
+                onChange={(e) => setNewTask({ ...newTask, project: e.target.value })}
                 className={styles.projectSelect}
               >
-                <option key="select-project" value="">Select Project</option>
+                <option value="">Select Project</option>
                 {projects.map((project) => (
-                  <option key={`new-project-${project.id}`} value={project.id}>
+                  <option key={project.id} value={project.id}>
                     {project.name}
                   </option>
                 ))}
@@ -440,34 +556,32 @@ export default function Tasks() {
 
               <select
                 value={newTask.priority}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, priority: e.target.value })
-                }
+                onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
                 className={styles.prioritySelect}
               >
-                <option value="low">Niedrig</option>
-                <option value="medium">Mittel</option>
-                <option value="high">Hoch</option>
+                {PRIORITIES.map((priority) => (
+                  <option key={priority.value} value={priority.value}>
+                    {priority.label}
+                  </option>
+                ))}
               </select>
 
               <select
                 value={newTask.status}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, status: e.target.value })
-                }
+                onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
                 className={styles.statusSelect}
               >
-                <option value="new">To Do</option>
-                <option value="in_progress">In Progress</option>
-                <option value="done">Completed</option>
+                {Object.entries(TASK_STATUSES).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
               </select>
 
               <input
                 type="date"
                 value={newTask.dueDate}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, dueDate: e.target.value })
-                }
+                onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
                 className={styles.dateInput}
               />
 
@@ -475,12 +589,10 @@ export default function Tasks() {
                 type="number"
                 placeholder="Estimated hours"
                 value={newTask.estimatedTime / 3600}
-                onChange={(e) =>
-                  setNewTask({
-                    ...newTask,
-                    estimatedTime: e.target.value * 3600,
-                  })
-                }
+                onChange={(e) => setNewTask({
+                  ...newTask,
+                  estimatedTime: e.target.value * 3600,
+                })}
                 className={styles.timeInput}
                 min="0.5"
                 max="24"
@@ -489,11 +601,22 @@ export default function Tasks() {
             </div>
 
             <div className={styles.formActions}>
-              <button onClick={addTask} className={styles.saveButton}>
+              <button
+                onClick={handleAddTask}
+                className={styles.saveButton}
+                disabled={isUpdating || !newTask.name.trim()}
+              >
                 <Save size={16} />
                 Save Task
               </button>
-              <button onClick={cancelAddTask} className={styles.cancelButton}>
+              <button
+                onClick={() => {
+                  setIsAddingTask(false);
+                  resetNewTaskForm();
+                }}
+                className={styles.cancelButton}
+                disabled={isUpdating}
+              >
                 <X size={16} />
                 Cancel
               </button>
@@ -501,28 +624,28 @@ export default function Tasks() {
           </div>
         )}
 
-        {/* Tasks List */}
+        {/* Tasks Section */}
         <div className={styles.tasksSection}>
           <h2 className={styles.sectionTitle}>
             Tasks ({filteredTasks.length})
           </h2>
 
-          <div className={styles.tasksList}>
-            {filteredTasks.length === 0 ? (
-              <div key="empty-state" className={styles.emptyState}>
-                <Target size={48} />
-                <h3>No tasks found</h3>
-                <p>
-                  {searchTerm || filter !== "all" || selectedProject || selectedPriority !== "all"
-                    ? "Try adjusting your search or filters"
-                    : "Create your first task to get started"}
-                </p>
-              </div>
-            ) : (
-              filteredTasks.map((task) => {
+          {filteredTasks.length === 0 ? (
+            <div className={styles.emptyState}>
+              <Target size={48} />
+              <h3>No tasks found</h3>
+              <p>
+                {searchTerm || filter !== "all" || selectedProject || selectedPriority !== "all"
+                  ? "Try adjusting your search or filters"
+                  : "Create your first task to get started"}
+              </p>
+            </div>
+          ) : viewMode === "list" ? (
+            <div className={styles.tasksList}>
+              {filteredTasks.map((task) => {
                 const project = projects.find(p => p.id === task.project);
                 return (
-                  <div key={`task-${task.id}`} className={styles.taskItem}>
+                  <div key={task.id} className={styles.taskItem}>
                     {editingTask === task.id ? (
                       <div className={styles.taskForm}>
                         <div className={styles.formGrid}>
@@ -531,7 +654,11 @@ export default function Tasks() {
                             placeholder="Task name..."
                             value={editingTaskData.name}
                             onChange={(e) =>
-                              setEditingTaskData({ ...editingTaskData, name: e.target.value, text: e.target.value })
+                              setEditingTaskData({
+                                ...editingTaskData,
+                                name: e.target.value,
+                                text: e.target.value,
+                              })
                             }
                             className={styles.taskInput}
                             autoFocus
@@ -540,13 +667,16 @@ export default function Tasks() {
                           <select
                             value={editingTaskData.project || ""}
                             onChange={(e) =>
-                              setEditingTaskData({ ...editingTaskData, project: e.target.value })
+                              setEditingTaskData({
+                                ...editingTaskData,
+                                project: e.target.value,
+                              })
                             }
                             className={styles.projectSelect}
                           >
-                            <option key="edit-select-project" value="">Select Project</option>
+                            <option value="">Select Project</option>
                             {projects.map((project) => (
-                              <option key={`edit-project-${project.id}`} value={project.id}>
+                              <option key={project.id} value={project.id}>
                                 {project.name}
                               </option>
                             ))}
@@ -555,24 +685,32 @@ export default function Tasks() {
                           <select
                             value={editingTaskData.status || "new"}
                             onChange={(e) =>
-                              setEditingTaskData({ ...editingTaskData, status: e.target.value })
+                              setEditingTaskData({
+                                ...editingTaskData,
+                                status: e.target.value,
+                              })
                             }
                             className={styles.statusSelect}
                           >
-                            <option key="edit-status-new" value="new">New</option>
-                            <option key="edit-status-progress" value="in_progress">In Progress</option>
-                            <option key="edit-status-completed" value="completed">Completed</option>
+                            {Object.entries(TASK_STATUSES).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
                           </select>
 
                           <select
                             value={editingTaskData.priority || "medium"}
                             onChange={(e) =>
-                              setEditingTaskData({ ...editingTaskData, priority: e.target.value })
+                              setEditingTaskData({
+                                ...editingTaskData,
+                                priority: e.target.value,
+                              })
                             }
                             className={styles.prioritySelect}
                           >
-                            {priorities.map((priority) => (
-                              <option key={`edit-priority-${priority.value}`} value={priority.value}>
+                            {PRIORITIES.map((priority) => (
+                              <option key={priority.value} value={priority.value}>
                                 {priority.label}
                               </option>
                             ))}
@@ -582,7 +720,10 @@ export default function Tasks() {
                             type="date"
                             value={editingTaskData.due_date || ""}
                             onChange={(e) =>
-                              setEditingTaskData({ ...editingTaskData, due_date: e.target.value })
+                              setEditingTaskData({
+                                ...editingTaskData,
+                                due_date: e.target.value,
+                              })
                             }
                             className={styles.dateInput}
                           />
@@ -605,11 +746,22 @@ export default function Tasks() {
                         </div>
 
                         <div className={styles.formActions}>
-                          <button onClick={saveEditedTask} className={styles.saveButton}>
+                          <button
+                            onClick={handleUpdateTask}
+                            className={styles.saveButton}
+                            disabled={isUpdating}
+                          >
                             <Save size={16} />
                             Save Changes
                           </button>
-                          <button onClick={cancelEditTask} className={styles.cancelButton}>
+                          <button
+                            onClick={() => {
+                              setEditingTask(null);
+                              setEditingTaskData(null);
+                            }}
+                            className={styles.cancelButton}
+                            disabled={isUpdating}
+                          >
                             <X size={16} />
                             Cancel
                           </button>
@@ -619,10 +771,17 @@ export default function Tasks() {
                       <>
                         <div className={styles.taskLeft}>
                           <button
-                            onClick={() => toggleTaskCompletion(task.id)}
+                            onClick={() => {
+                              const newStatus = task.status === "completed" ? "new" : "completed";
+                              handleUpdateTask({
+                                ...task,
+                                status: newStatus,
+                              });
+                            }}
                             className={styles.checkButton}
+                            disabled={isUpdating}
                           >
-                            {(task.status || "new") === "completed" ? (
+                            {task.status === "completed" ? (
                               <CheckCircle size={20} className={styles.completedCheck} />
                             ) : (
                               <Circle size={20} />
@@ -632,42 +791,41 @@ export default function Tasks() {
                           <div className={styles.taskInfo}>
                             <h4
                               className={`${styles.taskName} ${
-                                (task.status || "new") === "completed" ? styles.completedTask : ""
+                                task.status === "completed" ? styles.completedTask : ""
                               }`}
                             >
                               {task.text || "Untitled Task"}
                             </h4>
                             <div className={styles.taskMeta}>
                               {project && (
-                                <span key={`task-${task.id}-project`} className={styles.taskProject}>
+                                <span className={styles.taskProject}>
                                   {project.name}
                                 </span>
                               )}
                               {task.priority && (
                                 <span
-                                  key={`task-${task.id}-priority`}
                                   className={styles.taskPriority}
                                   style={{
                                     backgroundColor: getPriorityColor(task.priority),
                                   }}
                                 >
-                                  {priorities.find((p) => p.value === task.priority)?.label || "Medium"}
+                                  {PRIORITIES.find(p => p.value === task.priority)?.label}
                                 </span>
                               )}
                               {task.progress > 0 && (
-                                <span key={`task-${task.id}-time`} className={styles.taskTime}>
+                                <span className={styles.taskTime}>
                                   <Clock size={12} />
                                   {formatTime(task.progress)}
                                 </span>
                               )}
                               {task.due_date && (
-                                <span key={`task-${task.id}-due`} className={styles.taskDue}>
+                                <span className={styles.taskDue}>
                                   <Calendar size={12} />
                                   {new Date(task.due_date).toLocaleDateString()}
                                 </span>
                               )}
-                              <span key={`task-${task.id}-status`} className={styles.taskStatus}>
-                                {(task.status || "new").replace(/_/g, " ")}
+                              <span className={styles.taskStatus}>
+                                {TASK_STATUSES[task.status || "new"]}
                               </span>
                             </div>
                           </div>
@@ -675,14 +833,28 @@ export default function Tasks() {
 
                         <div className={styles.taskActions}>
                           <button
-                            onClick={() => startEditingTask(task)}
+                            onClick={() => {
+                              setEditingTaskData({
+                                id: task.id,
+                                text: task.text || "",
+                                name: task.text || "",
+                                status: task.status || "new",
+                                priority: task.priority || "medium",
+                                project: task.project || "",
+                                due_date: task.due_date || "",
+                                progress: task.progress || 0,
+                              });
+                              setEditingTask(task.id);
+                            }}
                             className={styles.editButton}
+                            disabled={isUpdating}
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
-                            onClick={() => deleteTask(task.id)}
+                            onClick={() => handleDeleteTask(task.id)}
                             className={styles.deleteButton}
+                            disabled={isUpdating}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -691,9 +863,241 @@ export default function Tasks() {
                     )}
                   </div>
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          ) : (
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <div className={styles.kanbanBoard}>
+                {Object.entries(getTasksByStatus()).map(([status, column]) => (
+                  <div key={status} className={styles.kanbanColumn}>
+                    <div className={styles.columnHeader}>
+                      <h3>{column.title}</h3>
+                      <span className={styles.taskCount}>{column.tasks.length}</span>
+                    </div>
+                    <Droppable droppableId={status}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={`${styles.columnContent} ${
+                            snapshot.isDraggingOver ? styles.draggingOver : ""
+                          }`}
+                        >
+                          {column.tasks.map((task, index) => (
+                            <Draggable
+                              key={task.id}
+                              draggableId={task.id.toString()}
+                              index={index}
+                              isDragDisabled={isUpdating}
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`${styles.kanbanTask} ${
+                                    snapshot.isDragging ? styles.dragging : ""
+                                  }`}
+                                  data-completed={task.status === "completed"}
+                                >
+                                  <div className={styles.kanbanTaskContent}>
+                                    <h4 className={`${styles.taskName} ${
+                                      task.status === "completed" ? styles.completedTask : ""
+                                    }`}>
+                                      {task.text || "Untitled Task"}
+                                    </h4>
+                                    <div className={`${styles.taskMeta} ${
+                                      task.status === "completed" ? styles.completedMeta : ""
+                                    }`}>
+                                      {task.project && (
+                                        <span className={styles.taskProject}>
+                                          {projects.find(p => p.id === task.project)?.name}
+                                        </span>
+                                      )}
+                                      {task.priority && (
+                                        <span
+                                          className={styles.taskPriority}
+                                          style={{
+                                            backgroundColor: getPriorityColor(task.priority),
+                                            opacity: task.status === "completed" ? 0.6 : 1
+                                          }}
+                                        >
+                                          {PRIORITIES.find(p => p.value === task.priority)?.label}
+                                        </span>
+                                      )}
+                                      {task.due_date && (
+                                        <span className={styles.taskDue}>
+                                          <Calendar size={12} />
+                                          {new Date(task.due_date).toLocaleDateString()}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className={styles.kanbanTaskActions}>
+                                    <button
+                                      onClick={() => {
+                                        setEditingTaskData({
+                                          id: task.id,
+                                          text: task.text || "",
+                                          name: task.text || "",
+                                          status: task.status || "new",
+                                          priority: task.priority || "medium",
+                                          project: task.project || "",
+                                          due_date: task.due_date || "",
+                                          progress: task.progress || 0,
+                                        });
+                                        setEditingTask(task.id);
+                                      }}
+                                      className={styles.editButton}
+                                      disabled={isUpdating}
+                                    >
+                                      <Edit2 size={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteTask(task.id)}
+                                      className={styles.deleteButton}
+                                      disabled={isUpdating}
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+
+                                  {/* Add edit form for Kanban tasks */}
+                                  {editingTask === task.id && (
+                                    <div className={styles.kanbanEditForm}>
+                                      <div className={styles.formGrid}>
+                                        <input
+                                          type="text"
+                                          placeholder="Task name..."
+                                          value={editingTaskData.name}
+                                          onChange={(e) =>
+                                            setEditingTaskData({
+                                              ...editingTaskData,
+                                              name: e.target.value,
+                                              text: e.target.value,
+                                            })
+                                          }
+                                          className={styles.taskInput}
+                                          autoFocus
+                                        />
+                                        
+                                        <select
+                                          value={editingTaskData.project || ""}
+                                          onChange={(e) =>
+                                            setEditingTaskData({
+                                              ...editingTaskData,
+                                              project: e.target.value,
+                                            })
+                                          }
+                                          className={styles.projectSelect}
+                                        >
+                                          <option value="">Select Project</option>
+                                          {projects.map((project) => (
+                                            <option key={project.id} value={project.id}>
+                                              {project.name}
+                                            </option>
+                                          ))}
+                                        </select>
+
+                                        <select
+                                          value={editingTaskData.status || "new"}
+                                          onChange={(e) =>
+                                            setEditingTaskData({
+                                              ...editingTaskData,
+                                              status: e.target.value,
+                                            })
+                                          }
+                                          className={styles.statusSelect}
+                                        >
+                                          {Object.entries(TASK_STATUSES).map(([value, label]) => (
+                                            <option key={value} value={value}>
+                                              {label}
+                                            </option>
+                                          ))}
+                                        </select>
+
+                                        <select
+                                          value={editingTaskData.priority || "medium"}
+                                          onChange={(e) =>
+                                            setEditingTaskData({
+                                              ...editingTaskData,
+                                              priority: e.target.value,
+                                            })
+                                          }
+                                          className={styles.prioritySelect}
+                                        >
+                                          {PRIORITIES.map((priority) => (
+                                            <option key={priority.value} value={priority.value}>
+                                              {priority.label}
+                                            </option>
+                                          ))}
+                                        </select>
+
+                                        <input
+                                          type="date"
+                                          value={editingTaskData.due_date || ""}
+                                          onChange={(e) =>
+                                            setEditingTaskData({
+                                              ...editingTaskData,
+                                              due_date: e.target.value,
+                                            })
+                                          }
+                                          className={styles.dateInput}
+                                        />
+
+                                        <input
+                                          type="number"
+                                          placeholder="Progress (hours)"
+                                          value={(editingTaskData.progress || 0) / 3600}
+                                          onChange={(e) =>
+                                            setEditingTaskData({
+                                              ...editingTaskData,
+                                              progress: e.target.value * 3600,
+                                            })
+                                          }
+                                          className={styles.timeInput}
+                                          min="0"
+                                          max="24"
+                                          step="0.5"
+                                        />
+                                      </div>
+
+                                      <div className={styles.formActions}>
+                                        <button
+                                          onClick={handleUpdateTask}
+                                          className={styles.saveButton}
+                                          disabled={isUpdating}
+                                        >
+                                          <Save size={16} />
+                                          Save Changes
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setEditingTask(null);
+                                            setEditingTaskData(null);
+                                          }}
+                                          className={styles.cancelButton}
+                                          disabled={isUpdating}
+                                        >
+                                          <X size={16} />
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </div>
+                ))}
+              </div>
+            </DragDropContext>
+          )}
         </div>
       </div>
     </div>

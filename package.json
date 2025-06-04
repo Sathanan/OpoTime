@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "formidable": "^3.5.4",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.511.0",
@@ -24,6 +25,7 @@
     "@types/node": "22.15.21",
     "@types/react": "19.1.5",
     "eslint": "^9",
-    "eslint-config-next": "15.3.2"
+    "eslint-config-next": "15.3.2",
+    "typescript": "5.8.3"
   }
 }
