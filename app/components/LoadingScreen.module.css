@@ -1,0 +1,266 @@
+.loadingContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loadingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+/* Logo Animation */
+.logoAnimation {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.logoSvg {
+  color: var(--accent-color);
+  animation: rotateLogo 3s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.logoCircle {
+  stroke-dasharray: 285;
+  stroke-dashoffset: 285;
+  animation: drawCircle 3s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.logoPath {
+  stroke-dasharray: 90;
+  stroke-dashoffset: 90;
+  animation: drawPath 3s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Loading Text Animation */
+.loadingText {
+  display: flex;
+  gap: 0.1rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.letter {
+  display: inline-block;
+  animation: wavyText 2s infinite;
+  animation-delay: calc(0.1s * var(--i));
+}
+
+.letter:nth-child(1) { --i: 1; }
+.letter:nth-child(2) { --i: 2; }
+.letter:nth-child(3) { --i: 3; }
+.letter:nth-child(4) { --i: 4; }
+.letter:nth-child(5) { --i: 5; }
+.letter:nth-child(6) { --i: 6; }
+.letter:nth-child(7) { --i: 7; }
+.letter:nth-child(8) { --i: 8; }
+.letter:nth-child(9) { --i: 9; }
+.letter:nth-child(10) { --i: 10; }
+.letter:nth-child(11) { --i: 11; }
+.letter:nth-child(12) { --i: 12; animation: blinkDots 1.4s infinite; }
+.letter:nth-child(13) { --i: 13; animation: blinkDots 1.4s infinite 0.2s; }
+.letter:nth-child(14) { --i: 14; animation: blinkDots 1.4s infinite 0.4s; }
+
+/* Progress Bar */
+.progressBar {
+  width: 200px;
+  height: 4px;
+  background: var(--bg-secondary);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progressFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--gradient);
+  animation: progressAnimation 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Pulse Effect */
+.loadingPulse {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  position: absolute;
+  opacity: 0;
+  animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animations */
+@keyframes rotateLogo {
+  0% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes drawCircle {
+  0% {
+    stroke-dashoffset: 285;
+  }
+  50% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -285;
+  }
+}
+
+@keyframes drawPath {
+  0%, 25% {
+    stroke-dashoffset: 90;
+  }
+  50%, 75% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -90;
+  }
+}
+
+@keyframes wavyText {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes blinkDots {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes progressAnimation {
+  0% {
+    left: -100%;
+    width: 100%;
+  }
+  50% {
+    left: 100%;
+    width: 100%;
+  }
+  100% {
+    left: 100%;
+    width: 0%;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .loadingContainer {
+  background: var(--bg-primary);
+}
+
+[data-theme="dark"] .logoSvg {
+  color: var(--accent-color);
+}
+
+[data-theme="dark"] .progressBar {
+  background: var(--bg-secondary);
+}
+
+/* Glass Effect */
+.loadingContent::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  bottom: -20px;
+  background: radial-gradient(
+    circle at center,
+    var(--accent-color) 0%,
+    transparent 70%
+  );
+  opacity: 0.1;
+  filter: blur(20px);
+  animation: glowPulse 2s infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.15;
+    transform: scale(1.1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .loadingContent {
+    gap: 1.5rem;
+  }
+
+  .logoAnimation {
+    width: 60px;
+    height: 60px;
+  }
+
+  .loadingText {
+    font-size: 1.2rem;
+  }
+
+  .progressBar {
+    width: 150px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .logoSvg,
+  .logoCircle,
+  .logoPath,
+  .letter,
+  .progressFill,
+  .loadingPulse {
+    animation: none;
+  }
+
+  .loadingContent::before {
+    display: none;
+  }
+} 

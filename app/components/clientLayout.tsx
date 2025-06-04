@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './sidebar';
+import LoadingScreen from './LoadingScreen';
 import styles from './css/clientLayout.module.css';
 
 export default function ClientLayout({ children }) {
@@ -10,6 +11,7 @@ export default function ClientLayout({ children }) {
   
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -24,6 +26,15 @@ export default function ClientLayout({ children }) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  useEffect(() => {
+    // Simuliere Ladezeit (kann später durch echtes Loading ersetzt werden)
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // Function to handle sidebar state changes
   const handleSidebarToggle = (expanded) => {
     setIsExpanded(expanded);
@@ -31,6 +42,10 @@ export default function ClientLayout({ children }) {
 
   if (hideNavbar) {
     return <main>{children}</main>;
+  }
+
+  if (isLoading) {
+    return <LoadingScreen />;
   }
 
   return (
