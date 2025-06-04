@@ -46,12 +46,18 @@ export default function Tasks() {
   // Core states
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState(null);
 
   // UI states
-  const [viewMode, setViewMode] = useState("list");
+  const [viewMode, setViewMode] = useState(() => {
+    // Try to get the saved view mode from localStorage, default to "list" if not found
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('taskViewMode') || 'list';
+    }
+    return 'list';
+  });
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [editingTaskData, setEditingTaskData] = useState(null);
@@ -72,10 +78,16 @@ export default function Tasks() {
     estimatedTime: 3600,
   });
 
+  // Save view mode to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('taskViewMode', viewMode);
+    }
+  }, [viewMode]);
+
   // Fetch data
   const fetchData = useCallback(async () => {
     try {
-      setIsLoading(true);
       setError(null);
 
       const [tasksData, projectsData] = await Promise.all([
@@ -93,7 +105,7 @@ export default function Tasks() {
       setTasks([]);
       setProjects([]);
     } finally {
-      setIsLoading(false);
+      setIsInitialLoading(false);
     }
   }, [selectedProject, selectedPriority]);
 
@@ -106,7 +118,7 @@ export default function Tasks() {
     if (!newTask.name.trim()) return;
 
     try {
-      setIsLoading(true);
+      setIsUpdating(true);
       const createdTask = await createTask(
         newTask.project || null,
         newTask.status,
@@ -125,7 +137,7 @@ export default function Tasks() {
       console.error("Error creating task:", error);
       setError("Failed to create task. Please try again.");
     } finally {
-      setIsLoading(false);
+      setIsUpdating(false);
     }
   };
 
@@ -133,7 +145,7 @@ export default function Tasks() {
     if (!editingTaskData || !editingTask) return;
 
     try {
-      setIsLoading(true);
+      setIsUpdating(true);
       const result = await updateTask(
         editingTask,
         editingTaskData.status,
@@ -162,7 +174,7 @@ export default function Tasks() {
       console.error("Error updating task:", error);
       setError("Failed to update task. Please try again.");
     } finally {
-      setIsLoading(false);
+      setIsUpdating(false);
     }
   };
 
@@ -170,7 +182,7 @@ export default function Tasks() {
     if (!window.confirm("Are you sure you want to delete this task?")) return;
 
     try {
-      setIsLoading(true);
+      setIsUpdating(true);
       const result = await deleteTaskApi(taskId);
       if (result) {
         setTasks(prev => prev.filter(task => task.id !== taskId));
@@ -179,7 +191,7 @@ export default function Tasks() {
       console.error("Error deleting task:", error);
       setError("Failed to delete task. Please try again.");
     } finally {
-      setIsLoading(false);
+      setIsUpdating(false);
     }
   };
 
@@ -201,11 +213,13 @@ export default function Tasks() {
 
     if (!task) return;
 
-    // Optimistically update the UI
-    updateTaskOptimistically(taskId, { status: newStatus });
+    // Optimistically update the UI first
+    setTasks(prev => prev.map(t =>
+      t.id === taskId ? { ...t, status: newStatus } : t
+    ));
 
     try {
-      setIsUpdating(true);
+      // No need to set loading state for drag operations
       const result = await updateTask(
         taskId,
         newStatus,
@@ -217,16 +231,18 @@ export default function Tasks() {
 
       if (!result) {
         // Revert the optimistic update if the API call fails
-        updateTaskOptimistically(taskId, { status: task.status });
+        setTasks(prev => prev.map(t =>
+          t.id === taskId ? { ...t, status: task.status } : t
+        ));
         setError("Failed to update task status. Please try again.");
       }
     } catch (error) {
       console.error("Error updating task status:", error);
       // Revert the optimistic update
-      updateTaskOptimistically(taskId, { status: task.status });
+      setTasks(prev => prev.map(t =>
+        t.id === taskId ? { ...t, status: task.status } : t
+      ));
       setError("Failed to update task status. Please try again.");
-    } finally {
-      setIsUpdating(false);
     }
   };
 
@@ -351,12 +367,16 @@ export default function Tasks() {
 
   const stats = getTaskStats();
 
-  if (isLoading) {
+  // Only show loading screen during initial load
+  if (isInitialLoading) {
     return (
       <div className={styles.tasksCont}>
         <div className={styles.loadingState}>
-          <div className={styles.loadingSpinner} />
-          <p>Loading tasks...</p>
+          <div className={styles.loadingSpinner}>
+            <div className={styles.loadingSpinnerInner} />
+          </div>
+          <h3 className={styles.loadingText}>Loading your tasks...</h3>
+          <p className={styles.loadingSubtext}>Please wait while we fetch your data</p>
         </div>
       </div>
     );
@@ -379,7 +399,6 @@ export default function Tasks() {
 
   return (
     <div className={styles.tasksCont}>
-      {isUpdating && <div className={styles.updateIndicator} />}
       <div className={styles.tasksContainer}>
         {/* Header */}
         <div className={styles.tasksHeader}>
@@ -511,15 +530,15 @@ export default function Tasks() {
 
           <div className={styles.viewSwitcher}>
             <button
-              onClick={() => setViewMode("list")}
-              className={`${styles.viewButton} ${viewMode === "list" ? styles.activeView : ""}`}
+              onClick={() => setViewMode('list')}
+              className={`${styles.viewButton} ${viewMode === 'list' ? styles.activeView : ''}`}
             >
               <List size={20} />
               List
             </button>
             <button
-              onClick={() => setViewMode("kanban")}
-              className={`${styles.viewButton} ${viewMode === "kanban" ? styles.activeView : ""}`}
+              onClick={() => setViewMode('kanban')}
+              className={`${styles.viewButton} ${viewMode === 'kanban' ? styles.activeView : ''}`}
             >
               <LayoutGrid size={20} />
               Kanban
@@ -888,7 +907,6 @@ export default function Tasks() {
                               key={task.id}
                               draggableId={task.id.toString()}
                               index={index}
-                              isDragDisabled={isUpdating}
                             >
                               {(provided, snapshot) => (
                                 <div
@@ -898,7 +916,6 @@ export default function Tasks() {
                                   className={`${styles.kanbanTask} ${
                                     snapshot.isDragging ? styles.dragging : ""
                                   }`}
-                                  data-completed={task.status === "completed"}
                                 >
                                   <div className={styles.kanbanTaskContent}>
                                     <h4 className={`${styles.taskName} ${
@@ -1099,6 +1116,11 @@ export default function Tasks() {
             </DragDropContext>
           )}
         </div>
+
+        {/* Show a subtle progress indicator for other operations */}
+        {isUpdating && !isInitialLoading && (
+          <div className={styles.updateIndicator} />
+        )}
       </div>
     </div>
   );

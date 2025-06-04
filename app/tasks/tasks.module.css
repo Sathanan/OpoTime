@@ -797,18 +797,31 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  border: 2px solid transparent;
+  border-radius: 12px;
 }
 
 .draggingOver {
   background: var(--bg-hover);
   transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.draggingOver::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px dashed #667eea;
+  border-radius: 12px;
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .dragging {
-  background: var(--bg-secondary);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  transform: rotate(2deg) scale(1.02);
+  background: var(--bg-primary);
+  transform: scale(1.02) rotate(1deg);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
 }
 
@@ -818,21 +831,22 @@
   border-radius: 12px;
   padding: 16px;
   cursor: grab;
-  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  opacity: 1;
+  position: relative;
+  user-select: none;
 }
 
 .kanbanTask:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: #667eea;
 }
 
-.kanbanTask[aria-disabled="true"] {
-  opacity: 0.7;
-  cursor: not-allowed;
+.kanbanTask:active {
+  cursor: grabbing;
 }
 
 .kanbanTaskContent {
@@ -1104,5 +1118,158 @@ button:disabled {
 
   .kanbanEditForm .formGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Loading States */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  min-height: 400px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.loadingSpinner {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 24px;
+  perspective: 600px;
+}
+
+.loadingSpinnerInner {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: #667eea;
+  border-left-color: #764ba2;
+  animation: spinnerRotate 1.2s linear infinite;
+}
+
+.loadingSpinnerInner:before,
+.loadingSpinnerInner:after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 3px solid transparent;
+}
+
+.loadingSpinnerInner:before {
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  border-top-color: #667eea;
+  border-left-color: #764ba2;
+  opacity: 0.8;
+  animation: spinnerRotate 2s linear infinite;
+}
+
+.loadingSpinnerInner:after {
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  border-top-color: #667eea;
+  border-left-color: #764ba2;
+  opacity: 0.6;
+  animation: spinnerRotate 1.5s linear infinite;
+}
+
+.loadingText {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+  opacity: 0;
+  animation: fadeInUp 0.6s ease forwards 0.3s;
+}
+
+.loadingSubtext {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  opacity: 0;
+  animation: fadeInUp 0.6s ease forwards 0.5s;
+}
+
+/* Update Indicator */
+.updateIndicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #667eea 50%,
+    transparent 100%
+  );
+  animation: loadingProgress 1.5s ease-in-out infinite;
+  z-index: 1000;
+}
+
+/* Loading Overlay */
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  opacity: 0;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+/* Animations */
+@keyframes spinnerRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes loadingProgress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(100%);
   }
 }
