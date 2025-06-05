@@ -1,8 +1,8 @@
 import Project from "../api/models/project";
 import { ShowError } from "../api/utilis/utillity";
 import { makeApiCall } from "../api/utilis/basefunctions";
-import { convertJsonToProject } from "../api/models/project";
-import { logData, logResponse, logBody, logParam } from "../utillity/logger";
+import { convertJsonToProject, getStatusLabel } from "../api/models/project";
+import { logData, logResponse, logBody } from "../utillity/logger";
 
 /**
  * Holt alle Projekte gefiltert nach Projekt-ID oder Projektname.
@@ -26,7 +26,7 @@ export async function getAllProjects(projectId = null, projectName = null) {
             return;
         }
         const data = await response.json();
-        logData("getInvitationByProject", data);
+        logData("getAllProjects", data);
         return convertJsonToProject(data);
 
     } catch (error) {
@@ -36,13 +36,13 @@ export async function getAllProjects(projectId = null, projectName = null) {
 }
 
 /**
- * Erstellt ein neues Projekt mit dem gegebenen Namen.
- * @param {Project} project - Der Name des neuen Projekts.
+ * Erstellt ein neues Projekt.
+ * @param {Project} project - Das neue Projekt.
  * @returns {Promise<Project>} Das neu erstellte Projekt.
  */
 export async function createProject(project) {
     try {
-        const body = JSON.stringify(project);
+        const body = JSON.stringify(project.toBackendFormat());
         logBody("createProject", body);
 
         const response = await makeApiCall("projects", "POST", body, true);
@@ -56,7 +56,7 @@ export async function createProject(project) {
         const data = await response.json();
         logData("createProject", data);
 
-        return convertJsonToProject(projectsData);
+        return convertJsonToProject(data);
     } catch (error) {
         ShowError("createProject", error);
         return;
@@ -64,14 +64,15 @@ export async function createProject(project) {
 }
 
 /**
- * Aktualisiert ein bestehendes Projekt mit neuem Namen.
- * @param {Project} project - Das aktualisierte Projekt in Form von Model.
+ * Aktualisiert ein bestehendes Projekt.
+ * @param {Project} project - Das aktualisierte Projekt.
  * @returns {Promise<Project>} Das aktualisierte Projekt.
  */
 export async function updateProject(project) {
     try {
-          const body = JSON.stringify({
-            ...project,
+        const backendData = project.toBackendFormat();
+        const body = JSON.stringify({
+            ...backendData,
             project_id: project.id,
         });
         logBody("updateProject", body);
@@ -87,7 +88,7 @@ export async function updateProject(project) {
         const data = await response.json();
         logData("updateProject", data);
 
-        return convertJsonToProject(projectsData);
+        return convertJsonToProject(data);
     } catch (error) {
         ShowError("updateProject", error);
         return;
@@ -97,7 +98,7 @@ export async function updateProject(project) {
 /**
  * Löscht ein Projekt anhand seiner ID.
  * @param {number} projectId - Die ID des zu löschenden Projekts.
- * @returns {Promise<{message: string}>} Bestätigung der Löschung.
+ * @returns {Promise<boolean>} Bestätigung der Löschung.
  */
 export async function deleteProject(projectId) {
     try {
@@ -109,19 +110,32 @@ export async function deleteProject(projectId) {
 
         if (!response.ok) {
             ShowError("deleteProject", response);
-            return;
+            return false;
         }
 
         return true;
     } catch (error) {
         ShowError("deleteProject", error);
-        return;
+        return false;
     }
 }
 
-export async function updateProjectStatus(projectId, timerRunning){
-    let project = await getAllProjects(projectId);
-    project.isTimerRunning = timerRunning;
-    await updateProject(project);
+/**
+ * Aktualisiert den Projektstatus.
+ * @param {number} projectId - Die ID des Projekts.
+ * @param {string} newStatus - Der neue Status.
+ * @returns {Promise<Project>} Das aktualisierte Projekt.
+ */
+export async function updateProjectStatus(projectId, newStatus) {
+    try {
+        const project = await getAllProjects(projectId);
+        if (!project) return null;
+        
+        project.status = Project.getStatusLabel(newStatus);
+        return await updateProject(project);
+    } catch (error) {
+        ShowError("updateProjectStatus", error);
+        return null;
+    }
 }
 

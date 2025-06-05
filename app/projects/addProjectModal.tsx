@@ -9,7 +9,10 @@ import {
   Palette,
   Clock,
   Plus,
-  Minus
+  Minus,
+  Activity,
+  ClipboardList,
+  Flag
 } from 'lucide-react';
 import styles from './css/addProjectModal.module.css';
 
@@ -184,7 +187,14 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
   if (!isOpen) return null;
 
   return (
-    <div className={styles.modalOverlay} onClick={handleClose}>
+    <div 
+      className={styles.modalOverlay} 
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          handleClose();
+        }
+      }}
+    >
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div className={styles.headerContent}>
@@ -206,7 +216,7 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
             {/* Projekt Name */}
             <div className={styles.formGroup}>
               <label className={styles.label}>
-                <FileText size={16} />
+                <ClipboardList size={16} />
                 Projektname *
               </label>
               <input
@@ -239,7 +249,7 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label className={styles.label}>
-                  <Target size={16} />
+                  <Activity size={16} />
                   Status
                 </label>
                 <select
@@ -257,7 +267,7 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
 
               <div className={styles.formGroup}>
                 <label className={styles.label}>
-                  <Target size={16} />
+                  <Flag size={16} />
                   Priorität
                 </label>
                 <select
@@ -313,17 +323,14 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onSu
                 <Palette size={16} />
                 Projektfarbe
               </label>
-              <div className={styles.colorPicker}>
-                {colorOptions.map(option => (
-                  <button
-                    key={option.color}
-                    type="button"
-                    className={`${styles.colorOption} ${formData.color === option.color ? styles.colorSelected : ''}`}
-                    style={{ backgroundColor: option.color }}
-                    onClick={() => handleInputChange('color', option.color)}
-                    title={option.name}
-                  />
-                ))}
+              <div className={styles.colorPickerContainer}>
+                <input
+                  type="color"
+                  value={formData.color}
+                  onChange={(e) => handleInputChange('color', e.target.value)}
+                  className={styles.colorPicker}
+                />
+                <span className={styles.currentColor}>{formData.color}</span>
               </div>
             </div>
             </div>
