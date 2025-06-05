@@ -16,7 +16,7 @@ export async function makeApiCall(additionalURL, method, requestBody = null, nee
     }
 
     const isFormData = requestBody instanceof FormData;
-    const url = `${BASE_URL}/${additionalURL}${parameter ? `/${parameter}` : ""}/`;
+    const url = `${BASE_URL}/${additionalURL}/${parameter ? `${parameter}` : ""}`;
 
     log("makeApiCall", `Making ${method} request to ${url}`);
 

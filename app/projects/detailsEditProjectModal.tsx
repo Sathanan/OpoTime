@@ -22,6 +22,7 @@ import { updateProject } from '../services/projectService';
 import { getInvitedUserByProjectID, getAllUsers } from '../api/utilis/user';
 import { createInvitation } from '../services/invitationService';
 import { checkDeadline, DeadlineStatus } from '../utillity/deadlineChecker';
+import { getUserInfoForProfileDisplay } from '../services/userInformationService';
 
 interface ProjectModalProps {
   project: Project | null;
@@ -49,19 +50,25 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   const [availableUsers, setAvailableUsers] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [projectUsers, setProjectUsers] = useState([]);
+  const [projectCreator, setProjectCreator] = useState(null);
 
   useEffect(() => {
     if (project) {
-      const initialData = {
-        name: project.name || '',
-        description: project.description || '',
-        status: project.status || 'init',
-        priority: project.priority || 'medium',
-        deadline: project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : '',
-        color: project.color || '#3B82F6'
+      const loadProjectData = async () => {
+        const initialData = {
+          name: project.name || '',
+          description: project.description || '',
+          status: project.status || 'init',
+          priority: project.priority || 'medium',
+          deadline: project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : '',
+          color: project.color || '#3B82F6'
+        };
+        //const creator = await getUserInfoForProfileDisplay(project.creator);
+        //setProjectCreator(creator);
+        setFormData(initialData);
+        setOriginalFormData(initialData);
       };
-      setFormData(initialData);
-      setOriginalFormData(initialData);
+      loadProjectData();
     }
   }, [project]);
 
@@ -71,7 +78,6 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
       try {
         const users = await getInvitedUserByProjectID(project.id);
         setProjectUsers(users);
-        
         const allUsers = await getAllUsers();
         setAvailableUsers(allUsers);
       } catch (err) {
@@ -206,6 +212,17 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
               <div className={styles.projectDetail}>
                 <h4>Beschreibung</h4>
                 <p>{project.description}</p>
+                {projectCreator && (
+                  <div className={styles.projectCreator}>
+                    <div className={styles.creatorAvatar}>
+                      {projectCreator.email?.substring(0, 2).toUpperCase() || 'UN'}
+                    </div>
+                    <div className={styles.creatorInfo}>
+                      <span className={styles.creatorName}>{projectCreator.name || 'Unbekannter Nutzer'}</span>
+                      <span className={styles.creatorRole}>Projekt-Ersteller</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className={styles.detailsGrid}>
@@ -484,3 +501,4 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
 };
 
 export default ProjectModal; 
+

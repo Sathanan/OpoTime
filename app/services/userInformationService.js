@@ -2,6 +2,7 @@ import UserInformation from "../api/models/userInformation";
 import { ShowError } from "../api/utilis/utillity";
 import { makeApiCall } from "../api/utilis/basefunctions";
 import { convertJsonToUserInformation } from "../api/models/userInformation";
+import convertJsonToUserInfoForDisplay from "../api/models/userInfoForDisplay";
 import { logData, logResponse, logBody, logParam } from "../utillity/logger";
 
 
@@ -28,6 +29,27 @@ export async function getUserInformation() {
         return;
     }
 }
+
+export async function getUserInfoForProfileDisplay(userID) {
+    try {
+        const response = await makeApiCall("infoForDisplay", "GET", null, true, `?userID=${userID}`);
+       logResponse("getUserInfoForProfileDisplay", response);
+
+        if (!response.ok) {
+            ShowError("getUserInfoForProfileDisplay", response);
+            return;
+        }
+
+        const data = await response.json();
+        logData("getUserInfoForProfileDisplay", data);
+
+        return convertJsonToUserInfoForDisplay(data);
+    } catch (err) {
+        ShowError("getUserInfoForProfileDisplay", err);
+        return;
+    }
+}
+
 
 /**
  * Aktualisiert ein bestimmtes Feld der Benutzerinformationen.
