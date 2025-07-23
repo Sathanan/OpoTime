@@ -14,7 +14,11 @@ import {
   UserPlus,
   X,
   Play,
-  Pause
+  Pause,
+  ListTodo,
+  Plus,
+  CheckCircle,
+  Circle
 } from 'lucide-react';
 import styles from './css/detailsEditProjectModal.module.css';
 import Project from '../api/models/project';
@@ -23,6 +27,8 @@ import { getInvitedUserByProjectID, getAllUsers } from '../api/utilis/user';
 import { createInvitation } from '../services/invitationService';
 import { checkDeadline, DeadlineStatus } from '../utillity/deadlineChecker';
 import { getUserInfoForProfileDisplay } from '../services/userInformationService';
+import { getAllTaskByProject, createTask, updateTask, deleteTask } from '../services/taskService';
+import Task from '../api/models/task';
 
 interface ProjectModalProps {
   project: Project | null;
@@ -30,6 +36,18 @@ interface ProjectModalProps {
   onClose: () => void;
   onProjectUpdate: () => Promise<void>;
 }
+
+const TASK_STATUSES = {
+  new: "To Do",
+  in_progress: "In Progress",
+  completed: "Completed"
+};
+
+const PRIORITIES = [
+  { value: "low", label: "Niedrig", color: "#10b981" },
+  { value: "medium", label: "Mittel", color: "#f59e0b" },
+  { value: "high", label: "Hoch", color: "#ef4444" },
+];
 
 const ProjectModal: React.FC<ProjectModalProps> = ({
   project,
@@ -51,6 +69,19 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   const [selectedUserId, setSelectedUserId] = useState('');
   const [projectUsers, setProjectUsers] = useState([]);
   const [projectCreator, setProjectCreator] = useState(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [editingTask, setEditingTask] = useState<number | null>(null);
+  const [editingTaskData, setEditingTaskData] = useState<any>(null);
+  const [newTask, setNewTask] = useState({
+    text: '',
+    status: 'new',
+    priority: 'medium',
+    due_date: '',
+    progress: 0,
+    estimatedTime: 3600
+  });
 
   useEffect(() => {
     if (project) {
@@ -63,8 +94,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
           deadline: project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : '',
           color: project.color || '#3B82F6'
         };
-        //const creator = await getUserInfoForProfileDisplay(project.creator);
-        //setProjectCreator(creator);
+        const creator = await getUserInfoForProfileDisplay(project.creator);
+        setProjectCreator(creator);
         setFormData(initialData);
         setOriginalFormData(initialData);
       };
@@ -77,14 +108,27 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
       if (!project) return;
       try {
         const users = await getInvitedUserByProjectID(project.id);
-        setProjectUsers(users);
+        setProjectUsers(Array.isArray(users) ? users : users ? [users] : []);
         const allUsers = await getAllUsers();
-        setAvailableUsers(allUsers);
+        setAvailableUsers(Array.isArray(allUsers) ? allUsers : allUsers ? [allUsers] : []);
       } catch (err) {
         console.error("Fehler beim Laden der Benutzer:", err);
       }
     }
     fetchUsers();
+  }, [project]);
+
+  useEffect(() => {
+    async function fetchTasks() {
+      if (!project) return;
+      try {
+        const projectTasks = await getAllTaskByProject(project.id);
+        setTasks(Array.isArray(projectTasks) ? projectTasks : projectTasks ? [projectTasks] : []);
+      } catch (err) {
+        console.error("Error loading tasks:", err);
+      }
+    }
+    fetchTasks();
   }, [project]);
 
   const hasChanges = () => {
@@ -141,7 +185,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
       return;
     }
 
-    const invitation = await createInvitation(project.id, selectedUserId);
+    const invitation = await createInvitation(project.id, parseInt(selectedUserId));
     const newUser = {
       ...userToAdd,
       InvitationState: "pending"
@@ -163,6 +207,94 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
 
   const getDeadlineStatus = (deadline: string): DeadlineStatus => {
     return checkDeadline(deadline);
+  };
+
+  const handleAddTask = async () => {
+    if (!newTask.text.trim() || !project) return;
+
+    try {
+      const createdTask = await createTask(
+        project.id,
+        newTask.status,
+        newTask.text,
+        newTask.priority,
+        newTask.due_date,
+        newTask.estimatedTime
+      );
+
+      if (createdTask) {
+        setTasks(prev => [...prev, ...(Array.isArray(createdTask) ? createdTask : [createdTask])]);
+        setIsAddingTask(false);
+        setNewTask({
+          text: '',
+          status: 'new',
+          priority: 'medium',
+          due_date: '',
+          progress: 0,
+          estimatedTime: 3600
+        });
+      }
+    } catch (error) {
+      console.error("Error creating task:", error);
+    }
+  };
+
+  const handleUpdateTask = async () => {
+    if (!editingTaskData || !editingTask) return;
+
+    try {
+      const updatedTask = await updateTask(
+        editingTask,
+        editingTaskData.status,
+        editingTaskData.text,
+        editingTaskData.priority,
+        editingTaskData.due_date,
+        editingTaskData.progress
+      );
+
+      if (updatedTask) {
+        setTasks(prev => prev.map(task => 
+          task.id === editingTask ? (Array.isArray(updatedTask) ? updatedTask[0] : updatedTask) : task
+        ));
+        setEditingTask(null);
+        setEditingTaskData(null);
+      }
+    } catch (error) {
+      console.error("Error updating task:", error);
+    }
+  };
+
+  const handleUpdateTaskStatus = async (taskId: number, newStatus: string) => {
+    try {
+      const updatedTask = await updateTask(taskId, newStatus);
+      if (updatedTask) {
+        setTasks(prev => prev.map(task => 
+          task.id === taskId ? (Array.isArray(updatedTask) ? updatedTask[0] : updatedTask) : task
+        ));
+      }
+    } catch (error) {
+      console.error("Error updating task:", error);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: number) => {
+    try {
+      const success = await deleteTask(taskId);
+      if (success) {
+        setTasks(prev => prev.filter(task => task.id !== taskId));
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
   };
 
   if (!isOpen || !project) return null;
@@ -198,6 +330,13 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
             Details
           </button>
           <button
+            className={`${styles.modalTab} ${activeTab === 'tasks' ? styles.active : ''}`}
+            onClick={() => setActiveTab('tasks')}
+          >
+            <ListTodo size={16} />
+            Aufgaben
+          </button>
+          <button
             className={`${styles.modalTab} ${activeTab === 'edit' ? styles.active : ''}`}
             onClick={() => setActiveTab('edit')}
           >
@@ -215,10 +354,18 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
                 {projectCreator && (
                   <div className={styles.projectCreator}>
                     <div className={styles.creatorAvatar}>
-                      {projectCreator.email?.substring(0, 2).toUpperCase() || 'UN'}
+                      {projectCreator.profile_image ? (
+                        <img 
+                          src={projectCreator.profile_image} 
+                          alt={`${projectCreator.username}'s profile`}
+                          className={styles.avatarImage}
+                        />
+                      ) : (
+                        projectCreator.email?.substring(0, 2).toUpperCase() || 'UN'
+                      )}
                     </div>
                     <div className={styles.creatorInfo}>
-                      <span className={styles.creatorName}>{projectCreator.name || 'Unbekannter Nutzer'}</span>
+                      <span className={styles.creatorName}>{projectCreator.username +" ("+projectCreator.email+")" || 'Unbekannter Nutzer'}</span>
                       <span className={styles.creatorRole}>Projekt-Ersteller</span>
                     </div>
                   </div>
@@ -259,7 +406,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
                   <div className={styles.teamInfo}>
                     <div className={styles.teamStat}>
                       <Users size={16} />
-                      <span>{projectUsers.length} Mitglieder</span>
+                      <span>{projectUsers.length + 1} Mitglieder</span>
                     </div>
                     <div className={`${styles.deadlineStat} ${
                       getDeadlineStatus(project.deadline) === 'warning' ? styles.deadlineWarning : 
@@ -325,6 +472,243 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
                 </div>
               </div>
             </div>
+          ) : activeTab === 'tasks' ? (
+            <div className={styles.tasksTab}>
+              <div className={styles.tasksHeader}>
+                <h3>Projektaufgaben</h3>
+                <button
+                  className={styles.addTaskButton}
+                  onClick={() => setIsAddingTask(true)}
+                >
+                  <Plus size={16} />
+                  Neue Aufgabe
+                </button>
+              </div>
+
+              {isAddingTask && (
+                <div className={styles.taskForm}>
+                  <div className={styles.formGrid}>
+                    <input
+                      type="text"
+                      placeholder="Aufgabenbeschreibung..."
+                      value={newTask.text}
+                      onChange={(e) => setNewTask({ ...newTask, text: e.target.value })}
+                      className={styles.taskInput}
+                    />
+                    <select
+                      value={newTask.status}
+                      onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
+                      className={styles.statusSelect}
+                    >
+                      {Object.entries(TASK_STATUSES).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={newTask.priority}
+                      onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                      className={styles.prioritySelect}
+                    >
+                      {PRIORITIES.map((priority) => (
+                        <option key={priority.value} value={priority.value}>
+                          {priority.label}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="date"
+                      value={newTask.due_date}
+                      onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                      className={styles.dateInput}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Geschätzte Zeit (Stunden)"
+                      value={newTask.estimatedTime / 3600}
+                      onChange={(e) => setNewTask({
+                        ...newTask,
+                        estimatedTime: parseFloat(e.target.value) * 3600
+                      })}
+                      className={styles.timeInput}
+                      min="0.5"
+                      max="24"
+                      step="0.5"
+                    />
+                  </div>
+                  <div className={styles.taskFormActions}>
+                    <button
+                      className={styles.saveTaskButton}
+                      onClick={handleAddTask}
+                    >
+                      <Save size={16} />
+                      Speichern
+                    </button>
+                    <button
+                      className={styles.cancelTaskButton}
+                      onClick={() => setIsAddingTask(false)}
+                    >
+                      <X size={16} />
+                      Abbrechen
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.tasksList}>
+                {tasks.map((task) => (
+                  <div key={task.id} className={styles.taskItem}>
+                    {editingTask === task.id ? (
+                      <div className={styles.taskForm}>
+                        <div className={styles.formGrid}>
+                          <input
+                            type="text"
+                            placeholder="Aufgabenbeschreibung..."
+                            value={editingTaskData.text}
+                            onChange={(e) => setEditingTaskData({
+                              ...editingTaskData,
+                              text: e.target.value
+                            })}
+                            className={styles.taskInput}
+                          />
+                          <select
+                            value={editingTaskData.status}
+                            onChange={(e) => setEditingTaskData({
+                              ...editingTaskData,
+                              status: e.target.value
+                            })}
+                            className={styles.statusSelect}
+                          >
+                            {Object.entries(TASK_STATUSES).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={editingTaskData.priority}
+                            onChange={(e) => setEditingTaskData({
+                              ...editingTaskData,
+                              priority: e.target.value
+                            })}
+                            className={styles.prioritySelect}
+                          >
+                            {PRIORITIES.map((priority) => (
+                              <option key={priority.value} value={priority.value}>
+                                {priority.label}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="date"
+                            value={editingTaskData.due_date || ''}
+                            onChange={(e) => setEditingTaskData({
+                              ...editingTaskData,
+                              due_date: e.target.value
+                            })}
+                            className={styles.dateInput}
+                          />
+                          <input
+                            type="number"
+                            placeholder="Fortschritt (Stunden)"
+                            value={(editingTaskData.progress || 0) / 3600}
+                            onChange={(e) => setEditingTaskData({
+                              ...editingTaskData,
+                              progress: parseFloat(e.target.value) * 3600
+                            })}
+                            className={styles.timeInput}
+                            min="0"
+                            max="24"
+                            step="0.5"
+                          />
+                        </div>
+                        <div className={styles.taskFormActions}>
+                          <button
+                            className={styles.saveTaskButton}
+                            onClick={handleUpdateTask}
+                          >
+                            <Save size={16} />
+                            Speichern
+                          </button>
+                          <button
+                            className={styles.cancelTaskButton}
+                            onClick={() => {
+                              setEditingTask(null);
+                              setEditingTaskData(null);
+                            }}
+                          >
+                            <X size={16} />
+                            Abbrechen
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={styles.taskContent}>
+                        <button
+                          className={styles.taskStatusToggle}
+                          onClick={() => handleUpdateTaskStatus(
+                            task.id,
+                            task.status === 'completed' ? 'new' : 'completed'
+                          )}
+                        >
+                          {task.status === 'completed' ? (
+                            <CheckCircle size={18} className={styles.completedIcon} />
+                          ) : (
+                            <Circle size={18} className={styles.todoIcon} />
+                          )}
+                        </button>
+                        <div className={styles.taskDetails}>
+                          <span className={`${styles.taskText} ${task.status === 'completed' ? styles.completed : ''}`}>
+                            {task.text}
+                          </span>
+                          <div className={styles.taskMeta}>
+                            <span className={styles.taskStatus}>
+                              {TASK_STATUSES[task.status || 'new']}
+                            </span>
+                            <span className={`${styles.taskPriority} ${styles[task.priority]}`}>
+                              {PRIORITIES.find(p => p.value === task.priority)?.label}
+                            </span>
+                            {task.due_date && (
+                              <span className={styles.taskDueDate}>
+                                <Calendar size={14} />
+                                {new Date(task.due_date).toLocaleDateString('de-DE')}
+                              </span>
+                            )}
+                            {task.progress > 0 && (
+                              <span className={styles.taskProgress}>
+                                <Clock size={14} />
+                                {formatTime(task.progress)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className={styles.taskActions}>
+                          <button
+                            className={styles.editTaskButton}
+                            onClick={() => {
+                              setEditingTaskData({
+                                ...task,
+                                text: task.text || ''
+                              });
+                              setEditingTask(task.id);
+                            }}
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            className={styles.deleteTaskButton}
+                            onClick={() => handleDeleteTask(task.id)}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <form onSubmit={async (e) => {
               e.preventDefault();
@@ -339,7 +723,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
 
                 const updatedProject = new Project(
                   project.id,
-                  project.user,
+                  project.creator,
                   formData.name,
                   formData.description || '',
                   formData.status,
@@ -475,13 +859,14 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
         {activeTab === 'details' && (
           <div className={styles.modalFooter}>
             <button
-              className={`${styles.actionButton} ${styles.timerAction} ${project.isTimerRunning ? styles.running : ''}`}
+              className={`${styles.actionButton} ${styles.timerAction} ${isTimerRunning ? styles.running : ''}`}
               onClick={(e) => {
                 e.stopPropagation();
+                setIsTimerRunning(!isTimerRunning);
                 // Timer toggle logic will be implemented later
               }}
             >
-              {project.isTimerRunning ? (
+              {isTimerRunning ? (
                 <>
                   <Pause size={16} />
                   Timer stoppen

@@ -316,32 +316,30 @@
 }
 
 .timerButton {
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6B7280;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .timerButton:hover {
-  background: var(--primary-color);
-  color: white;
-  transform: scale(1.1);
+  background-color: #F3F4F6;
+  color: #3B82F6;
 }
 
 .timerButton.running {
-  background: #10B981;
-  color: white;
+  color: #3B82F6;
+  background-color: #EFF6FF;
 }
 
 .timerButton.running:hover {
-  background: #059669;
+  background-color: #DBEAFE;
 }
 
 /* Animations */

@@ -42,13 +42,11 @@ export async function getTodaysShifts() {
 export async function createShift(shift = null) {
     try {
         const shiftData = shift || {
-            start_time: Date.now(),
-            end_time: null,
-            taskTimeEntry: null,
-            projectTimeEntry: null
+            start_time: new Date().toISOString(),
+            end_time: null
         };
 
-        const response = await makeApiCall("shifts", "POST", shiftData, true);
+        const response = await makeApiCall("shifts", "POST", JSON.stringify(shiftData), true);
         logResponse("createShift", response);
         
         if (!response.ok) {

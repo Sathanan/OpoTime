@@ -2,7 +2,7 @@ import UserInformation from "../api/models/userInformation";
 import { ShowError } from "../api/utilis/utillity";
 import { makeApiCall } from "../api/utilis/basefunctions";
 import { convertJsonToUserInformation } from "../api/models/userInformation";
-import convertJsonToUserInfoForDisplay from "../api/models/userInfoForDisplay";
+import { convertJsonToUserInfoForDisplay } from "../api/models/userInfoForDisplay";
 import { logData, logResponse, logBody, logParam } from "../utillity/logger";
 
 

@@ -28,6 +28,7 @@ class Project {
     invited_users = [],
     color = "#3B82F6",
     tasks = { total: 0, completed: 0 },
+    isTimerRunning = false
   ) {
     this.id = id;
     this.creator = creator;
@@ -42,6 +43,7 @@ class Project {
     this.invited_users = invited_users;
     this.color = color;
     this.tasks = tasks;
+    this.isTimerRunning = isTimerRunning;
   }
 
   static getStatusLabel(status) {
@@ -69,7 +71,8 @@ class Project {
       today_time: this.today_time,
       deadline: this.deadline,
       invited_users: this.invited_users,
-      color: this.color
+      color: this.color,
+      isTimerRunning: this.isTimerRunning
     };
   }
 }

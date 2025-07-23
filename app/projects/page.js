@@ -36,6 +36,8 @@ import {
 } from 'lucide-react';
 import styles from './css/projects.module.css';
 import { getAllProjects, createProject, updateProjectStatus, updateProject } from '../services/projectService';
+import { createProjectTimeEntry, getAllProjectTimeEntries, updateProjectTimeEntry } from '../services/projectTimeEntryService';
+import { createShift } from '../services/shiftService';
 import AddProjectModal from './addProjectModal';
 import Project from '../api/models/project';
 import ProjectModal from './detailsEditProjectModal';
@@ -160,6 +162,44 @@ const ProjectsPage = () => {
     }
   }
 
+  const toggleProjectTimer = async (projectId) => {
+    try {
+      const project = projects.find(p => p.id === projectId);
+      if (!project) return;
+
+      if (!project.isTimerRunning) {
+        // Start timer
+        const shift = await createShift();
+        if (!shift) return;
+
+        const timeEntry = {
+          project: projectId,
+          shift: shift.id,
+          start_time: new Date().toISOString(),
+          end_time: null,
+          description: `Time tracking for ${project.name}`
+        };
+
+        const createdEntry = await createProjectTimeEntry(timeEntry);
+        if (createdEntry) {
+          await fetchData(); // Refresh projects to update timer status
+        }
+      } else {
+        // Stop timer
+        const timeEntries = await getAllProjectTimeEntries(null, projectId);
+        const activeEntry = timeEntries?.find(entry => entry.start_time && !entry.end_time);
+        
+        if (activeEntry) {
+          activeEntry.end_time = new Date().toISOString();
+          await updateProjectTimeEntry(activeEntry);
+          await fetchData(); // Refresh projects to update timer status
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling project timer:", error);
+    }
+  };
+
   return (
     <div className={styles.projectsPage}>
       <div className={styles.header}>
@@ -276,11 +316,11 @@ const ProjectsPage = () => {
               <div className={styles.projectStats}>
                 <div className={styles.stat}>
                   <Clock size={14} />
-                  <span>{project.totalTime || "0h"}</span>
+                  <span>{project.total_time || "0h"}</span>
                 </div>
                 <div className={styles.stat}>
                   <Users size={14} />
-                  <span>1/1</span>
+                  <span>{(project.invited_users?.length || 0) + 1}</span>
                 </div>
                 <div className={styles.stat}>
                   <CheckCircle2 size={14} />
@@ -294,7 +334,7 @@ const ProjectsPage = () => {
                   checkDeadline(project.deadline) === 'overdue' ? styles.deadlineOverdue : ''
                 }`}>
                   <Calendar size={14} />
-                  <span>{new Date(project.deadline).toLocaleDateString('de-DE')}</span>
+                  <span>{project.deadline ? new Date(project.deadline).toLocaleDateString('de-DE') : 'Kein Datum'}</span>
                 </div>
                 <div className={styles.projectActions}>
                   <button
@@ -303,6 +343,7 @@ const ProjectsPage = () => {
                       e.stopPropagation();
                       toggleProjectTimer(project.id);
                     }}
+                    title={project.isTimerRunning ? 'Timer stoppen' : 'Timer starten'}
                   >
                     {project.isTimerRunning ? <Pause size={16} /> : <Play size={16} />}
                   </button>

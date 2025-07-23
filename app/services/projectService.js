@@ -3,6 +3,7 @@ import { ShowError } from "../api/utilis/utillity";
 import { makeApiCall } from "../api/utilis/basefunctions";
 import { convertJsonToProject, getStatusLabel } from "../api/models/project";
 import { logData, logResponse, logBody } from "../utillity/logger";
+import { getAllProjectTimeEntries } from "./projectTimeEntryService";
 
 /**
  * Holt alle Projekte gefiltert nach Projekt-ID oder Projektname.
@@ -27,8 +28,87 @@ export async function getAllProjects(projectId = null, projectName = null) {
         }
         const data = await response.json();
         logData("getAllProjects", data);
-        return convertJsonToProject(data);
+        
+        // Convert to Project objects
+        const projects = convertJsonToProject(data);
+        
+        // Check for active time entries for each project
+        if (Array.isArray(projects)) {
+            for (const project of projects) {
+                const timeEntries = await getAllProjectTimeEntries(null, project.id);
+                if (timeEntries && timeEntries.length > 0) {
+                    // Check if any time entry has a start_time but no end_time
+                    project.isTimerRunning = timeEntries.some(entry => entry.start_time && !entry.end_time);
+                    
+                    // Calculate total time from all completed entries
+                    let totalMilliseconds = 0;
+                    let todayMilliseconds = 0;
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
 
+                    timeEntries.forEach(entry => {
+                        if (entry.start_time && entry.end_time) {
+                            const start = new Date(entry.start_time);
+                            const end = new Date(entry.end_time);
+                            const duration = end.getTime() - start.getTime();
+                            totalMilliseconds += duration;
+
+                            // Check if entry is from today
+                            if (start >= today) {
+                                todayMilliseconds += duration;
+                            }
+                        }
+                    });
+
+                    // Convert milliseconds to hours and minutes
+                    const totalHours = Math.floor(totalMilliseconds / (1000 * 60 * 60));
+                    const totalMinutes = Math.floor((totalMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
+                    project.total_time = `${totalHours}h ${totalMinutes}m`;
+
+                    const todayHours = Math.floor(todayMilliseconds / (1000 * 60 * 60));
+                    const todayMinutes = Math.floor((todayMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
+                    project.today_time = `${todayHours}h ${todayMinutes}m`;
+                }
+            }
+            return projects;
+        } else if (projects) {
+            const timeEntries = await getAllProjectTimeEntries(null, projects.id);
+            if (timeEntries && timeEntries.length > 0) {
+                // Check if any time entry has a start_time but no end_time
+                projects.isTimerRunning = timeEntries.some(entry => entry.start_time && !entry.end_time);
+                
+                // Calculate total time from all completed entries
+                let totalMilliseconds = 0;
+                let todayMilliseconds = 0;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                timeEntries.forEach(entry => {
+                    if (entry.start_time && entry.end_time) {
+                        const start = new Date(entry.start_time);
+                        const end = new Date(entry.end_time);
+                        const duration = end.getTime() - start.getTime();
+                        totalMilliseconds += duration;
+
+                        // Check if entry is from today
+                        if (start >= today) {
+                            todayMilliseconds += duration;
+                        }
+                    }
+                });
+
+                // Convert milliseconds to hours and minutes
+                const totalHours = Math.floor(totalMilliseconds / (1000 * 60 * 60));
+                const totalMinutes = Math.floor((totalMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
+                projects.total_time = `${totalHours}h ${totalMinutes}m`;
+
+                const todayHours = Math.floor(todayMilliseconds / (1000 * 60 * 60));
+                const todayMinutes = Math.floor((todayMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
+                projects.today_time = `${todayHours}h ${todayMinutes}m`;
+            }
+            return projects;
+        }
+        return null;
     } catch (error) {
         ShowError("getAllProjects", error);
         return;

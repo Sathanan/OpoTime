@@ -13,7 +13,7 @@ export async function getAllProjectTimeEntries(entryId = null, projectId = null,
             if (shiftId) queryParams += `${queryParams ? '&' : '?'}shift_id=${shiftId}`;
         }
 
-        const response = await makeApiCall("project-time-entries", "GET", null, true, queryParams);
+        const response = await makeApiCall("project-time", "GET", null, true, queryParams);
         logResponse("getAllProjectTimeEntries", response);
         
         if (!response.ok) {
@@ -32,7 +32,7 @@ export async function getAllProjectTimeEntries(entryId = null, projectId = null,
 
 export async function createProjectTimeEntry(projectTimeEntry) {
     try {
-        const response = await makeApiCall("project-time-entries", "POST", projectTimeEntry, true);
+        const response = await makeApiCall("project-time", "POST", JSON.stringify(projectTimeEntry), true);
         logResponse("createProjectTimeEntry", response);
         
         if (!response.ok) {
@@ -52,11 +52,15 @@ export async function createProjectTimeEntry(projectTimeEntry) {
 export async function updateProjectTimeEntry(projectTimeEntry) {
     try {
         const body = {
-            ...projectTimeEntry,
-            entry_id: projectTimeEntry.id
+            entry_id: projectTimeEntry.id,
+            project: projectTimeEntry.project,
+            shift: projectTimeEntry.shift,
+            start_time: projectTimeEntry.start_time,
+            end_time: projectTimeEntry.end_time,
+            description: projectTimeEntry.description
         };
         
-        const response = await makeApiCall("project-time-entries", "PUT", body, true);
+        const response = await makeApiCall("project-time", "PUT", JSON.stringify(body), true);
         logResponse("updateProjectTimeEntry", response);
         
         if (!response.ok) {
@@ -76,11 +80,11 @@ export async function updateProjectTimeEntry(projectTimeEntry) {
 export async function patchProjectTimeEntry(projectTimeEntry) {
     try {
         const body = {
-            ...projectTimeEntry,
-            entry_id: projectTimeEntry.id
+            entry_id: projectTimeEntry.id,
+            end_time: projectTimeEntry.end_time
         };
         
-        const response = await makeApiCall("project-time-entries", "PATCH", body, true);
+        const response = await makeApiCall("project-time", "PATCH", JSON.stringify(body), true);
         logResponse("patchProjectTimeEntry", response);
         
         if (!response.ok) {
@@ -99,7 +103,7 @@ export async function patchProjectTimeEntry(projectTimeEntry) {
 
 export async function deleteProjectTimeEntry(entryId) {
     try {
-        const response = await makeApiCall("project-time-entries", "DELETE", null, true, `?entry_id=${entryId}`);
+        const response = await makeApiCall("project-time", "DELETE", null, true, `?entry_id=${entryId}`);
         logResponse("deleteProjectTimeEntry", response);
         
         if (!response.ok) {
